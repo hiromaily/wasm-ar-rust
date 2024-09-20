@@ -1,10 +1,29 @@
-use opencv::{core, imgcodecs, imgproc};
+use anyhow::Context;
+use opencv::{
+    core::{self, MatTraitConst},
+    imgcodecs, imgproc,
+};
 
-fn main() {
+// 画像読み込み用の関数
+fn load_image(path: &str) -> anyhow::Result<opencv::prelude::Mat> {
+    let img = imgcodecs::imread(path, imgcodecs::IMREAD_COLOR)
+        .with_context(|| format!("Failed to load image '{}'", path))?;
+
+    if !img.empty() {
+        Ok(img)
+    } else {
+        Err(anyhow::anyhow!("Image '{}' is empty", path))
+    }
+}
+
+fn main() -> anyhow::Result<()> {
     // テンプレートマッチングを実行するための画像とテンプレート画像を読み込みます。
     println!("1. load image");
-    let image = imgcodecs::imread("./images/entireimage.png", imgcodecs::IMREAD_COLOR).unwrap();
-    let template = imgcodecs::imread("./images/template.png", imgcodecs::IMREAD_COLOR).unwrap();
+    let image_path = "./images/entireimage.png";
+    let template_path = "./images/template.png";
+
+    let image = load_image(image_path)?;
+    let template = load_image(template_path)?;
 
     // 画像のグレースケール化を行います。
     println!("2. grayscale transform");
@@ -40,4 +59,6 @@ fn main() {
     .unwrap();
     println!("Max Location: {:?}", max_loc);
     // Max Location: Point_ { x: 1142, y: 412 }
+
+    Ok(())
 }
