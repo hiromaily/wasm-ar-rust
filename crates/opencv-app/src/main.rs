@@ -1,10 +1,10 @@
 use anyhow::Context;
 use opencv::{
-    core::{self, MatTraitConst},
+    core::{self, Mat, MatTraitConst, Point},
     imgcodecs, imgproc,
 };
 
-// 画像読み込み用の関数
+// load image from file path
 fn load_image(path: &str) -> anyhow::Result<opencv::prelude::Mat> {
     let img = imgcodecs::imread(path, imgcodecs::IMREAD_COLOR)
         .with_context(|| format!("Failed to load image '{}'", path))?;
@@ -16,47 +16,66 @@ fn load_image(path: &str) -> anyhow::Result<opencv::prelude::Mat> {
     }
 }
 
-fn main() -> anyhow::Result<()> {
-    // テンプレートマッチングを実行するための画像とテンプレート画像を読み込みます。
-    println!("1. load image");
-    let image_path = "./images/entireimage.png";
-    let template_path = "./images/template.png";
+// transform images to grayscale
+fn convert_to_grayscale(image: &Mat) -> anyhow::Result<Mat> {
+    let mut gray_image = Mat::default();
+    imgproc::cvt_color(image, &mut gray_image, imgproc::COLOR_BGR2GRAY, 0)
+        .context("Failed to convert image to grayscale")?;
+    Ok(gray_image)
+}
 
-    let image = load_image(image_path)?;
-    let template = load_image(template_path)?;
-
-    // 画像のグレースケール化を行います。
-    println!("2. grayscale transform");
-    let mut gray_image = core::Mat::default();
-    imgproc::cvt_color(&image, &mut gray_image, imgproc::COLOR_BGR2GRAY, 0).unwrap();
-    let mut gray_template = core::Mat::default();
-    imgproc::cvt_color(&template, &mut gray_template, imgproc::COLOR_BGR2GRAY, 0).unwrap();
-
-    // テンプレートマッチングを実行します。
-    println!("3. execute template matching");
-    let mut result = core::Mat::default();
+// execute template matching
+fn execute_template_matching(image: &Mat, template: &Mat) -> anyhow::Result<Mat> {
+    let mut result = Mat::default();
     imgproc::match_template(
-        &gray_image,
-        &gray_template,
+        image,
+        template,
         &mut result,
         imgproc::TM_CCOEFF_NORMED,
         &core::no_array(),
     )
-    .unwrap();
+    .context("Failed to perform template matching")?;
+    Ok(result)
+}
 
-    // テンプレートマッチングの結果を取得します。
-    println!("4. get result");
-    let mut min_val = 0.9; // 閾値
-    let mut max_loc = core::Point::new(0, 0);
+// get matching result
+fn get_matching_result(result: &Mat, min_val: f64) -> anyhow::Result<Point> {
+    let mut min_val = min_val; // threshold
+    let mut max_loc = Point::new(0, 0);
     core::min_max_loc(
-        &result,
+        result,
         Some(&mut min_val),
         None,
         None,
         Some(&mut max_loc),
         &core::no_array(),
     )
-    .unwrap();
+    .context("Failed to get min and max locations from result")?;
+    Ok(max_loc)
+}
+
+fn main() -> anyhow::Result<()> {
+    // テンプレートマッチングを実行するための画像とテンプレート画像を読み込む
+    println!("1. load images");
+    let image_path = "./images/entireimage.png";
+    let template_path = "./images/template.png";
+
+    let image = load_image(image_path)?;
+    let template = load_image(template_path)?;
+
+    // 画像のグレースケール化を行う
+    println!("2. transform images to grayscale");
+    let gray_image = convert_to_grayscale(&image)?;
+    let gray_template = convert_to_grayscale(&template)?;
+
+    // テンプレートマッチングを実行する
+    println!("3. execute template matching");
+    let result = execute_template_matching(&gray_image, &gray_template)?;
+
+    // テンプレートマッチングの結果を取得する
+    println!("4. get result");
+    let min_val = 0.9; // threshold
+    let max_loc = get_matching_result(&result, min_val)?;
     println!("Max Location: {:?}", max_loc);
     // Max Location: Point_ { x: 1142, y: 412 }
 
