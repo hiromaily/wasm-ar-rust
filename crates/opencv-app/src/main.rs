@@ -1,6 +1,6 @@
 use anyhow::Context;
 use opencv::{
-    core::{self, Mat, MatTraitConst, Point, Vector},
+    core::{self, Mat, MatTraitConst, Mat_AUTO_STEP, Point, Size, Vector, CV_8UC3},
     imgcodecs, imgproc,
 };
 
@@ -34,6 +34,28 @@ fn load_embedded_template() -> anyhow::Result<Mat> {
     }
 }
 
+#[allow(dead_code)]
+struct Clamped<T>(T);
+
+// convert `Clamped<Vec<u8>>, width, height` to Mat
+fn convert_to_mat(image_data: Clamped<Vec<u8>>, width: u32, height: u32) -> anyhow::Result<Mat> {
+    let Clamped(data) = image_data;
+    let size = Size::new(width as i32, height as i32);
+
+    // from RGB to Mat
+    let mat = Mat::from_slice(&data).with_context(|| "Failed to create Mat from image data")?;
+    let mat = unsafe {
+        Mat::new_size_with_data_unsafe(
+            size,
+            CV_8UC3,
+            mat.data() as *mut std::ffi::c_void,
+            Mat_AUTO_STEP,
+        )
+    }?;
+
+    Ok(mat)
+}
+
 // transform images to grayscale
 fn convert_to_grayscale(image: &Mat) -> anyhow::Result<Mat> {
     let mut gray_image = Mat::default();
@@ -57,29 +79,29 @@ fn template_matching(image: &Mat, template: &Mat) -> anyhow::Result<Mat> {
 }
 
 // get matching result
-fn get_matching_result(result: &Mat, min_val: f64) -> anyhow::Result<Point> {
-    let mut min_val = min_val; // threshold
+fn get_matching_result(result: &Mat) -> anyhow::Result<(Point, f64)> {
+    let mut min_val = 0.9; // threshold
+    let mut max_val = 0.0; // important to judge
     let mut max_loc = Point::new(0, 0);
     core::min_max_loc(
         result,
-        Some(&mut min_val),
+        Some(&mut min_val), // 行列内の最小値を格納する変数への参照 (あまり利用しない)
+        Some(&mut max_val), // 行列内の最大値を格納する変数への参照 (この値が高いほど、テンプレートが元画像と高く一致していることを示す)
         None,
-        None,
-        Some(&mut max_loc),
+        Some(&mut max_loc), // テンプレートが最も一致していると思われる元画像の位置
         &core::no_array(),
     )
     .context("Failed to get min and max locations from result")?;
-    Ok(max_loc)
+    Ok((max_loc, max_val))
 }
 
 fn main() -> anyhow::Result<()> {
     // テンプレートマッチングを実行するための画像とテンプレート画像を読み込む
     println!("1. load images");
     let image_path = "./images/entireimage.png";
-    //let template_path = "./images/template.png";
+    //let image_path = "./images/entireimage-nodata.png";
 
     let image = load_image(image_path)?;
-    //let template = load_image(template_path)?;
     let template = load_embedded_template()?;
 
     // 画像のグレースケール化を行う
@@ -93,10 +115,9 @@ fn main() -> anyhow::Result<()> {
 
     // テンプレートマッチングの結果を取得する
     println!("4. get result");
-    let min_val = 0.9; // threshold
-    let max_loc = get_matching_result(&result, min_val)?;
-    println!("Max Location: {:?}", max_loc);
-    // Max Location: Point_ { x: 1142, y: 412 }
+    let (max_loc, max_val) = get_matching_result(&result)?;
+    println!("Max Location: {:?}, Max Value: {:?}", max_loc, max_val);
+    //Max Location: Point_ { x: 1142, y: 412 }, Max Value: 0.9999997019767761
 
     Ok(())
 }
