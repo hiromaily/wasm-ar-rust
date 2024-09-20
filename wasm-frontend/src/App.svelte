@@ -1,25 +1,29 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  //import init, { process_image } from "./pkg/your_project";
+  import { onMount, onDestroy } from "svelte";
   import * as wasm from "ar-wasm";
 
   let videoElement: HTMLVideoElement;
   let canvasElement: HTMLCanvasElement;
   let isFullScreen: boolean = false;
   let imageDataUrl = "";
+  let animationFrameId: number;
 
-  // カメラの起動処理
   async function startCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoElement.srcObject = stream;
+
+      // カメラ映像がロードされたら定期的にキャプチャする
+      videoElement.onloadedmetadata = () => {
+        videoElement.play();
+        captureImage();
+      };
     } catch (err) {
       console.error("カメラにアクセスできませんでした:", err);
       alert("カメラにアクセスできませんでした。");
     }
   }
 
-  // 画像キャプチャ処理
   async function captureImage() {
     const context = canvasElement.getContext("2d");
     if (!context) return;
@@ -42,17 +46,36 @@
       canvasElement.width,
       canvasElement.height
     );
-    const data = new Uint8Array(imageData.data.buffer);
+    const rgba = new Uint8Array(imageData.data.buffer);
+    //const rgba = imageData.data;
+    console.log(rgba);
 
     // Rust/WebAssemblyへの送信処理を呼び出す
-    await sendToRust(data);
+    await sendToRust(rgba);
+
+    // 次のフレームで再度キャプチャを行う
+    animationFrameId = requestAnimationFrame(captureImage);
   }
 
-  async function sendToRust(data: Uint8Array) {
-    // call wasm
-    const result = wasm.process_image(data);
-    console.log(result);
+  async function sendToRust(rgba: Uint8Array) {
+    try {
+      // call wasm
+      const result = wasm.process_image(rgba);
+      console.log(result);
+    } catch (e) {
+      console.error(e);
+    }
   }
+
+  // async function sendToRust(rgba: Uint8ClampedArray) {
+  //   try {
+  //     // call wasm
+  //     const result = wasm.process_image(rgba);
+  //     console.log(result);
+  //   } catch (e) {
+  //     console.error(e);
+  //   }
+  // }
 
   function toggleFullScreen() {
     isFullScreen = !isFullScreen;
@@ -71,12 +94,18 @@
   onMount(() => {
     startCamera();
   });
+
+  onDestroy(() => {
+    // クリーンアップ
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+    }
+  });
 </script>
 
 <main>
   <h1>Camera Access and Image Capture Demo</h1>
   <video bind:this={videoElement} autoplay playsinline></video>
-  <button on:click={captureImage}>Capture Image</button>
   <button on:click={toggleFullScreen}
     >{isFullScreen ? "Exit Full Screen" : "Full Screen"}</button
   >
