@@ -1,6 +1,6 @@
 use anyhow::Context;
 use opencv::{
-    core::{self, Mat, MatTraitConst, Point},
+    core::{self, Mat, MatTraitConst, Point, Vector},
     imgcodecs, imgproc,
 };
 
@@ -16,6 +16,24 @@ fn load_image(path: &str) -> anyhow::Result<opencv::prelude::Mat> {
     }
 }
 
+// load embeded template image
+fn load_embedded_template() -> anyhow::Result<Mat> {
+    // include_bytes! embeds assets when compiling
+    let data = include_bytes!("../images/template.png"); // path srom main.rs
+
+    // バイト配列を opencv の Mat として扱う
+    let buf = Vector::<u8>::from_slice(data);
+
+    let template = imgcodecs::imdecode(&buf, imgcodecs::IMREAD_COLOR)
+        .context("Failed to decode embedded template image")?;
+
+    if !template.empty() {
+        Ok(template)
+    } else {
+        Err(anyhow::anyhow!("Embedded template image is empty"))
+    }
+}
+
 // transform images to grayscale
 fn convert_to_grayscale(image: &Mat) -> anyhow::Result<Mat> {
     let mut gray_image = Mat::default();
@@ -25,7 +43,7 @@ fn convert_to_grayscale(image: &Mat) -> anyhow::Result<Mat> {
 }
 
 // execute template matching
-fn execute_template_matching(image: &Mat, template: &Mat) -> anyhow::Result<Mat> {
+fn template_matching(image: &Mat, template: &Mat) -> anyhow::Result<Mat> {
     let mut result = Mat::default();
     imgproc::match_template(
         image,
@@ -58,10 +76,11 @@ fn main() -> anyhow::Result<()> {
     // テンプレートマッチングを実行するための画像とテンプレート画像を読み込む
     println!("1. load images");
     let image_path = "./images/entireimage.png";
-    let template_path = "./images/template.png";
+    //let template_path = "./images/template.png";
 
     let image = load_image(image_path)?;
-    let template = load_image(template_path)?;
+    //let template = load_image(template_path)?;
+    let template = load_embedded_template()?;
 
     // 画像のグレースケール化を行う
     println!("2. transform images to grayscale");
@@ -70,7 +89,7 @@ fn main() -> anyhow::Result<()> {
 
     // テンプレートマッチングを実行する
     println!("3. execute template matching");
-    let result = execute_template_matching(&gray_image, &gray_template)?;
+    let result = template_matching(&gray_image, &gray_template)?;
 
     // テンプレートマッチングの結果を取得する
     println!("4. get result");
