@@ -9,6 +9,10 @@ opencv-lib = { path = "../opencv-lib" }
 
 anyhow = "1.0"
 
+[[bin]]
+name = "app"
+path = "bin/app.rs"
+
 [lints]
 workspace = true
 
