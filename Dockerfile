@@ -19,6 +19,8 @@ RUN git clone https://github.com/emscripten-core/emsdk.git \
     && ./emsdk install latest \
     && ./emsdk activate latest
 
+RUN rustup target add wasm32-unknown-emscripten
+
 WORKDIR /workspace
 
 # copy code # Note: make sure .dockerignore is configured properly
@@ -26,5 +28,6 @@ COPY . .
 
 # build multiple workspaces
 RUN make build
+#RUN ./build.sh
 
 CMD ["bash"]

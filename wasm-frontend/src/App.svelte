@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import * as wasm from "ar-wasm";
+  import * as wasm from "opencv-wasm";
 
   let videoElement: HTMLVideoElement;
   let canvasElement: HTMLCanvasElement;

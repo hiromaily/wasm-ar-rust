@@ -1,4 +1,4 @@
-# ar-wasm
+# opencv-wasm
 
 ## [opencv-rust](https://github.com/twistedfall/opencv-rust)
 
