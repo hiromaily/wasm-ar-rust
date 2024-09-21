@@ -5,10 +5,10 @@ fn main() -> anyhow::Result<()> {
     // テンプレートマッチングを実行するための画像とテンプレート画像を読み込む
     println!("1. load images");
     let image_path = "./images/entireimage.png";
-    //let image_path = "./images/entireimage-nodata.png";
 
     let image = loader::load_image(image_path)?;
-    let template = loader::load_embedded_template()?;
+    let data = include_bytes!("../images/template.png");
+    let template = loader::load_embedded_template(data)?;
 
     // 画像のグレースケール化を行う
     println!("2. transform images to grayscale");

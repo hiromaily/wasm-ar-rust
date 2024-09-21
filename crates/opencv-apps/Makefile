@@ -4,7 +4,19 @@ build:
 
 .PHONY: run
 run:
-	cargo run --bin opencv-app
+	cargo run --bin opencv-apps
+
+.PHONY: run-template
+run-template:
+	cargo run --bin app-template
+
+.PHONY: run-template2
+run-template2:
+	cargo run --bin app-template2
+
+.PHONY: run-template3
+run-template3:
+	cargo run --bin app-template3
 
 .PHONY: run-grayscale
 run-grayscale:

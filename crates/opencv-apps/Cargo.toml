@@ -1,13 +1,28 @@
 [package]
-name = "opencv-app"
+name = "opencv-apps"
 version = "0.1.0"
 edition = "2021"
+
+# build script
+build = "build.rs"
 
 [dependencies]
 # workspace
 opencv-lib = { path = "../opencv-lib" }
 
 anyhow = "1.0"
+
+[[bin]]
+name = "app-template"
+path = "bin/app_template.rs"
+
+[[bin]]
+name = "app-template2"
+path = "bin/app_template2.rs"
+
+[[bin]]
+name = "app-template3"
+path = "bin/app_template3.rs"
 
 [[bin]]
 name = "app-grayscale"
