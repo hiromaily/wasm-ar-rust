@@ -10,8 +10,12 @@ opencv-lib = { path = "../opencv-lib" }
 anyhow = "1.0"
 
 [[bin]]
-name = "app"
-path = "bin/app.rs"
+name = "app-grayscale"
+path = "bin/app_grayscale.rs"
+
+[[bin]]
+name = "app-blurred"
+path = "bin/app_blurred.rs"
 
 [lints]
 workspace = true
