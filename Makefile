@@ -39,7 +39,6 @@ fix:
 build:
 	cargo build
 	make -C crates/ar-wasm build
-	make -C crates/ar-wasm build-bundler
 
 .PHONY: setup-web
 setup-web:
@@ -48,3 +47,15 @@ setup-web:
 .PHONY: run-web
 run-web:
 	make -C wasm-frontend dev
+
+
+#------------------------------------------------------------------------------
+# Docker
+#------------------------------------------------------------------------------
+.PHONY: build-image
+build-image:
+	docker build --progress=plain -t wasm-ar:latest -f ./Dockerfile .
+
+.PHONY: lint-dockerfile
+lint-dockerfile:
+	docker build -f ./Dockerfile . --check

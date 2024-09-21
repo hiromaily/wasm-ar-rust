@@ -1,3 +1,7 @@
+.PHONY: setup-wasm
+setup-wasm:
+	rustup target add wasm32-unknown-unknown
+
 # can be used pkg from npm
 .PHONY: build
 build:
@@ -8,4 +12,3 @@ build:
 build-web:
 	mkdir -p public/pkg
 	wasm-pack build --out-dir public/pkg --target web
-

@@ -1,0 +1,17 @@
+# git
+.git
+.gitignore
+
+# compiled files
+target
+
+# editor
+*.idea
+*.vscode
+
+# log
+*.log
+
+# other modules
+node_modules
+wasm-frontend
