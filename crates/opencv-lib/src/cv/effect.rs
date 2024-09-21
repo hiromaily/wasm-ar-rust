@@ -91,6 +91,9 @@ pub fn rotate_image(image: &Mat, angle: i32) -> anyhow::Result<Mat> {
 // 平滑化 (平均ブラー)
 // e.g. let blurred_image = apply_blur(&image, 5)?;
 pub fn apply_blur(image: &Mat, ksize: i32) -> anyhow::Result<Mat> {
+    // カーネルサイズが奇数であることを保証
+    let ksize = if ksize % 2 == 0 { ksize + 1 } else { ksize };
+
     let mut blurred = Mat::default();
     imgproc::blur(
         image,

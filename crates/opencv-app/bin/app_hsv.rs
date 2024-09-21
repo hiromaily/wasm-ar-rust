@@ -8,12 +8,12 @@ fn main() -> anyhow::Result<()> {
     let image_path = "./images/entireimage.png";
     let image = loader::load_image(image_path)?;
 
-    // 画像のブラー(ぼかし)を行う
-    println!("2. transform images to blur");
-    let gray_image = effect::apply_gaussian_blur(&image, 25)?;
+    // 画像のHSV変換を行う
+    println!("2. transform images to hsv");
+    let gray_image = effect::convert_to_hsv(&image)?;
 
     // 保存
-    let save_path = "./output/entireimage_blur.png";
+    let save_path = "./output/entireimage_hsv.png";
     println!("3. save image: file name {}", save_path);
     saver::save_image(save_path, &gray_image)?;
 

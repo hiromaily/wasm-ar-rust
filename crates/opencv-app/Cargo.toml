@@ -17,6 +17,34 @@ path = "bin/app_grayscale.rs"
 name = "app-blurred"
 path = "bin/app_blurred.rs"
 
+[[bin]]
+name = "app-blurred2"
+path = "bin/app_blurred2.rs"
+
+[[bin]]
+name = "app-binary"
+path = "bin/app_binary.rs"
+
+[[bin]]
+name = "app-edge"
+path = "bin/app_edge.rs"
+
+[[bin]]
+name = "app-hsv"
+path = "bin/app_hsv.rs"
+
+[[bin]]
+name = "app-histogram"
+path = "bin/app_histogram.rs"
+
+[[bin]]
+name = "app-resize"
+path = "bin/app_resize.rs"
+
+[[bin]]
+name = "app-rotate"
+path = "bin/app_rotate.rs"
+
 [lints]
 workspace = true
 
