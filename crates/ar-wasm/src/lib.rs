@@ -1,4 +1,3 @@
-//use image::ImageFormat;
 use image::{ImageBuffer, Rgba};
 use opencv::core::Vector;
 use opencv::imgcodecs;
@@ -12,15 +11,6 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
 use wasm_bindgen::JsValue;
 use web_sys::console;
-
-#[wasm_bindgen]
-//#[repr(C)]
-#[derive(Serialize)]
-pub struct Vertex {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
 
 const TEMPLATE_IMAGE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/poi.png"));
 
@@ -85,72 +75,4 @@ pub fn template_match(image_data: Clamped<Vec<u8>>, width: u32, height: u32) -> 
     } else {
         0
     }
-}
-
-// Export a `generate_image` function from Rust to JavaScript,
-// that generates image.
-#[wasm_bindgen]
-pub fn process_image(data: &[u8]) -> Result<JsValue, JsValue> {
-    console::log_1(&"process_image called".into());
-
-    // 画像フォーマットを明示的に指定して読み込む
-    // FIXME: The image format could not be determined
-
-    let img = image::load_from_memory(data).map_err(|e| JsValue::from_str(&e.to_string()))?;
-
-    if img.width() > 100 && img.height() > 100 {
-        console::log_1(&format!("Image dimensions are {}x{}", img.width(), img.height()).into());
-
-        let vertices = generate_cube_vertices();
-        serde_wasm_bindgen::to_value(&vertices).map_err(|e| JsValue::from_str(&e.to_string()))
-    } else {
-        console::log_1(&"Image is too small".into());
-
-        Ok(JsValue::NULL)
-    }
-}
-
-fn generate_cube_vertices() -> Vec<Vertex> {
-    vec![
-        Vertex {
-            x: -1.0,
-            y: -1.0,
-            z: -1.0,
-        },
-        Vertex {
-            x: -1.0,
-            y: -1.0,
-            z: 1.0,
-        },
-        Vertex {
-            x: -1.0,
-            y: 1.0,
-            z: -1.0,
-        },
-        Vertex {
-            x: -1.0,
-            y: 1.0,
-            z: 1.0,
-        },
-        Vertex {
-            x: 1.0,
-            y: -1.0,
-            z: -1.0,
-        },
-        Vertex {
-            x: 1.0,
-            y: -1.0,
-            z: 1.0,
-        },
-        Vertex {
-            x: 1.0,
-            y: 1.0,
-            z: -1.0,
-        },
-        Vertex {
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-        },
-    ]
 }
