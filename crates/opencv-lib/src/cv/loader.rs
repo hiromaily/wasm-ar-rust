@@ -17,27 +17,15 @@ pub fn load_image(path: &str) -> anyhow::Result<opencv::prelude::Mat> {
 }
 
 // load embeded template image
-// pub fn load_embedded_template() -> anyhow::Result<Mat> {
-//     // include_bytes! embeds assets when compiling
-//     let data = include_bytes!("../../images/template.png"); // path from main.rs
-
-//     // バイト配列を opencv の Mat として扱う
-//     let buf = Vector::<u8>::from_slice(data);
-
-//     let template = imgcodecs::imdecode(&buf, imgcodecs::IMREAD_COLOR)
-//         .context("Failed to decode embedded template image")?;
-
-//     if !template.empty() {
-//         Ok(template)
-//     } else {
-//         Err(anyhow::anyhow!("Embedded template image is empty"))
-//     }
-// }
-
+// e.g.
+//  let template = loader::load_embedded_template(TEMPLATE_IMAGE)?;
+// or
+// let data = include_bytes!("../images/template.png");
+// let template = loader::load_embedded_template(data)?;
 pub fn load_embedded_template(data: impl AsRef<[u8]>) -> anyhow::Result<Mat> {
     let data = data.as_ref(); // convert to slice
 
-    // バイト配列を opencv の Mat として扱う
+    // treat bytes array as opencv Mat
     let buf = Vector::<u8>::from_slice(data);
 
     let template = imgcodecs::imdecode(&buf, imgcodecs::IMREAD_COLOR)
