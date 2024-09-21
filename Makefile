@@ -14,7 +14,13 @@ pre-install:
 	brew install opencv
 	brew install llvm
 	brew install pkg-config
+
+# required for building wasm
+.PHONY: setup-libclang
+setup-libclang-wasm:
 	@#ln -s /opt/homebrew/opt/llvm/lib/libclang.dylib ${HOME}/.local/share/rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libclang.dylib
+	ln -s /Library/Developer/CommandLineTools/usr/lib/libclang.dylib ${HOME}/.local/share/rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libclang.dylib
+	@#unlink ${HOME}/.local/share/rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libclang.dylib
 
 
 #------------------------------------------------------------------------------

@@ -35,7 +35,7 @@ run-binary:
 	cargo run --bin app-binary
 
 .PHONY: run-edge
-run-binary:
+run-edge:
 	cargo run --bin app-edge
 
 .PHONY: run-hsv
@@ -43,7 +43,7 @@ run-hsv:
 	cargo run --bin app-hsv
 
 .PHONY: run-histogram
-run-hsv:
+run-histogram:
 	cargo run --bin app-histogram
 
 .PHONY: run-resize
