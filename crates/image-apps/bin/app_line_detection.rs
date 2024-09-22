@@ -26,8 +26,8 @@ fn main() {
 
     // 5. drwa line to image
     println!("5. draw line to image");
-    let mut line_img = RgbaImage::from_pixel(img.width(), img.height(), Rgba([255, 255, 255, 0]));
-    draw_polar_lines(&mut line_img, &lines, Rgba([255, 0, 0, 255]));
+    let line_img = RgbaImage::from_pixel(img.width(), img.height(), Rgba([255, 255, 255, 0]));
+    draw_polar_lines(&line_img, &lines, Rgba([255, 0, 0, 255]));
 
     // 6. save
     println!("6. save");

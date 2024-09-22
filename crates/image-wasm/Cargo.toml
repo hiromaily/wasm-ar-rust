@@ -1,0 +1,27 @@
+[package]
+name = "image-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+image = { version = "0.25", default-features = false, features = [
+    "png",
+    "jpeg",
+    "bmp",
+] }
+imageproc = "0.25"
+web-sys = { version = "0.3", features = ["console"] }
+
+[profile.release]
+opt-level = "z" # To create a smaller binary
+
+# For Apple Silicon
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lints]
+workspace = true
