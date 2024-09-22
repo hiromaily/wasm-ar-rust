@@ -1,9 +1,11 @@
 use image::Rgb;
-use imageproc::template_matching::{find_extremes, match_template, MatchTemplateMethod};
 use imageproc::{drawing::draw_hollow_rect_mut, rect::Rect};
 
-// template matching using imageproc::template_matching
-// Fucking slow but accurate
+// workspace
+use template_matching::{find_extremes, match_template, MatchTemplateMethod};
+
+// template matching using template-matching crate
+// faster and accurate
 
 fn main() {
     // 1. load images
@@ -15,21 +17,24 @@ fn main() {
 
     // 2. transform to grayscale
     println!("2. transform to grayscale");
-    let gray_bg_img = bg_img.to_luma8();
-    let gray_template_img = template_img.to_luma8();
+    let gray_bg_img = bg_img.to_luma32f();
+    let gray_template_img = template_img.to_luma32f();
 
     // 3. template matching
     println!("3. template matching");
-    let result_img: image::ImageBuffer<image::Luma<f32>, Vec<f32>> = match_template(
+    let result_img = match_template(
         &gray_bg_img,
         &gray_template_img,
-        MatchTemplateMethod::SumOfSquaredErrors,
+        MatchTemplateMethod::SumOfSquaredDifferences,
     );
-    // 4. find min & max values
-    let result = find_extremes(&result_img);
 
+    // 4. find min & max values
+    println!("4. calculate min & max values");
+    let result = find_extremes(&result_img);
     println!("Min value: {:?}", result.min_value);
     println!("Min position: {:?}", result.min_value_location);
+    // Min value: 4267.434
+    // Min position: (239, 124)
 
     // 一致位置の矩形を描画
     let mut img_rgb = bg_img.into_rgb8();
@@ -46,6 +51,6 @@ fn main() {
 
     // save result
     img_rgb
-        .save("output/app_template_matching2.png")
+        .save("output/app_template_matching3.png")
         .expect("Failed to save image");
 }

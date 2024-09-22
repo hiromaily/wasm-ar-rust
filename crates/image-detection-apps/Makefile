@@ -21,3 +21,7 @@ run-template-matching:
 .PHONY: run-template-matching2
 run-template-matching2:
 	cargo run --bin imadetect-template-matching2
+
+.PHONY: run-template-matching3
+run-template-matching:
+	cargo run --bin imadetect-template-matching3

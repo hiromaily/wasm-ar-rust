@@ -28,5 +28,9 @@ path = "bin/app_template_matching.rs"
 name = "imadetect-template-matching2"
 path = "bin/app_template_matching2.rs"
 
+[[bin]]
+name = "imadetect-template-matching3"
+path = "bin/app_template_matching3.rs"
+
 [lints]
 workspace = true

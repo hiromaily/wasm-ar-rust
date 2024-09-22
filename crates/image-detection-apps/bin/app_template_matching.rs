@@ -2,6 +2,7 @@ use image::GrayImage;
 //use image::{imageops::resize, imageops::FilterType, GrayImage};
 //use ndarray::Array2;
 
+// template matching without library
 // Fucking slow
 
 fn template_matching(image: &GrayImage, template: &GrayImage) -> Option<(u32, u32)> {
