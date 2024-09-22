@@ -2,11 +2,13 @@
 import * as wasm from "image-wasm";
 import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
+import Help from "./Help.svelte";
 
 let video: HTMLVideoElement;
 let canvas: HTMLCanvasElement;
 let context: CanvasRenderingContext2D;
 let initialized = false;
+let showHelp = true;
 
 // initialization
 const setup = async () => {
@@ -81,6 +83,8 @@ onMount(async () => {
       } else if (event.key === "o" || event.key === "O") {
         console.log("O: saveOriginalImage");
         saveOriginalImage(context, video);
+      } else if (event.key === "h" || event.key === "H") {
+        showHelp = !showHelp;
       }
     });
 
@@ -92,3 +96,6 @@ onMount(async () => {
 </script>
 
 <video bind:this={video} autoplay playsinline></video>
+{#if showHelp}
+  <Help />
+{/if}
