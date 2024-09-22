@@ -4,11 +4,18 @@ import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
+// Element
 let video: HTMLVideoElement;
 let canvas: HTMLCanvasElement;
 let context: CanvasRenderingContext2D;
+
+// Flag
 let initialized = false;
 let showHelp = false;
+
+// FPS
+let fps = 0;
+let lastTimestamp = 0;
 
 // initialization
 const setupVideo = async () => {
@@ -53,10 +60,18 @@ const setupEvent = () => {
 };
 
 // process each frame
-const processFrame = () => {
+const processFrame = (timestamp: number) => {
   try {
     if (!initialized || !context) return;
 
+    // calculate and update FPS
+    if (lastTimestamp) {
+      const delta = (timestamp - lastTimestamp) / 1000;
+      fps = Math.round(1 / delta);
+    }
+    lastTimestamp = timestamp;
+
+    // video image
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     // call wasm function
@@ -114,6 +129,13 @@ onMount(async () => {
 </script>
 
 <video bind:this={video} autoplay playsinline></video>
+
+<div
+  id="fps"
+  style="position:absolute; bottom: 10px; left: 10px; color: white; background-color: rgba(0, 0, 0, 0.7); padding: 5px;"
+>
+  {fps} FPS
+</div>
 
 {#if showHelp}
   <Help />
