@@ -7,13 +7,19 @@ use template_matching::{find_extremes, match_template, MatchTemplateMethod};
 // template matching using template-matching crate
 // faster and accurate
 
+// include_bytes! embeds assets when compiling
+const TEMPLATE_IMAGE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/poi-s.png"));
+
 fn main() {
     // 1. load images
     println!("1. load image");
     let bg_img = image::open("images/web1.png").unwrap();
     //let bg_img = image::open("images/web2.png").unwrap();
     //let bg_img = image::open("images/web_nodata.png").unwrap();
-    let template_img = image::open("images/poi-s.png").unwrap();
+
+    //let template_img = image::open("images/poi-s.png").unwrap();
+    let template_img =
+        image::load_from_memory_with_format(TEMPLATE_IMAGE, image::ImageFormat::Png).unwrap();
 
     // 2. transform to grayscale
     println!("2. transform to grayscale");

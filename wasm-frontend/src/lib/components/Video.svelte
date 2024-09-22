@@ -118,7 +118,8 @@ onMount(async () => {
     setupCanvas();
     setupEvent();
 
-    processFrame();
+    const unixTimestamp = Math.floor(new Date().getTime() / 1000);
+    processFrame(unixTimestamp);
 
     // help
     showHelp = true;

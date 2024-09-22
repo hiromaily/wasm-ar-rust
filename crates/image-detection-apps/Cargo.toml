@@ -3,6 +3,8 @@ name = "image-detection-apps"
 version = "0.1.0"
 edition = "2021"
 
+build = "src/build.rs"
+
 [dependencies]
 # workspace
 template-matching = { path = "../template-matching" }
