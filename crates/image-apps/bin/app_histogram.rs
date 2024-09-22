@@ -1,4 +1,4 @@
-use imageproc::edges::canny;
+use imageproc::contrast::equalize_histogram;
 
 fn main() {
     // 1. load image
@@ -9,12 +9,13 @@ fn main() {
     println!("2. transform to grayscale");
     let gray_img = img.to_luma8();
 
-    // 3. detect Canny Edge / Cannyエッジ検出
-    let edges = canny(&gray_img, 50.0, 100.0);
+    // 3. transform to Histogram Equalization / ヒストグラム均一化
+    println!("3. transform to histogram equalization");
+    let equalized_img = equalize_histogram(&gray_img);
 
     // 4. save
-    println!("3. save");
-    edges
-        .save("./output/cannyedge.png")
+    println!("4. save");
+    equalized_img
+        .save("./output/histogram.png")
         .expect("Failed to save result image");
 }

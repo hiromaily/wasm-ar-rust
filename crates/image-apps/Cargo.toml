@@ -23,5 +23,17 @@ path = "bin/app_gaussianblur.rs"
 name = "imgapp-thresholding"
 path = "bin/app_thresholding.rs"
 
+[[bin]]
+name = "imgapp-histogram"
+path = "bin/app_histogram.rs"
+
+[[bin]]
+name = "imgapp-meanfilter"
+path = "bin/app_mean_filter.rs"
+
+[[bin]]
+name = "imgapp-line-detection"
+path = "bin/app_line_detection.rs"
+
 [lints]
 workspace = true
