@@ -4,9 +4,10 @@
 <div class="help-overlay">
   <h3>Help</h3>
   <p>Full screen by `Escape` key</p>
-  <p>Save effect image by `S` key</p>
-  <p>Save web camera image by `O` key</p>
-  <p>Help by `H` key</p>
+  <p>Full screen for effect window by `w` key</p>
+  <p>Save effect image by `s` key</p>
+  <p>Save web camera image by `o` key</p>
+  <p>Show Help window by `h` key</p>
 </div>
 
 <style>
