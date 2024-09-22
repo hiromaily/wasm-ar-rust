@@ -6,6 +6,10 @@ build:
 run:
 	cargo run --bin image-apps
 
+.PHONY: run-wasm
+run-wasm:
+	cargo run --bin imgapp-wasm
+
 .PHONY: run-grayscale
 run-grayscale:
 	cargo run --bin imgapp-grayscale
