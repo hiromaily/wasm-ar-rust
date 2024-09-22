@@ -1,0 +1,28 @@
+[package]
+name = "image-detection-apps"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# workspace
+template-matching = { path = "../template-matching" }
+
+image_hasher = "2.0.0"
+image = "0.25"
+imageproc = "0.25"
+ndarray = "0.16"
+
+[[bin]]
+name = "imadetect-phash"
+path = "bin/app_phash.rs"
+
+[[bin]]
+name = "imadetect-template-matching"
+path = "bin/app_template_matching.rs"
+
+[[bin]]
+name = "imadetect-template-matching2"
+path = "bin/app_template_matching2.rs"
+
+[lints]
+workspace = true
