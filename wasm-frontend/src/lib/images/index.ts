@@ -1,4 +1,4 @@
-import * as wasm from "image-wasm";
+import * as wasm from "image-effect-wasm";
 
 // Save image from canvas
 const saveImage = (tempCanvas: HTMLCanvasElement, filename: string) => {
