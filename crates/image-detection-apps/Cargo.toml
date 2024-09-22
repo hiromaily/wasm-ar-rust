@@ -17,6 +17,10 @@ name = "imadetect-phash"
 path = "bin/app_phash.rs"
 
 [[bin]]
+name = "imadetect-phash2"
+path = "bin/app_phash2.rs"
+
+[[bin]]
 name = "imadetect-template-matching"
 path = "bin/app_template_matching.rs"
 

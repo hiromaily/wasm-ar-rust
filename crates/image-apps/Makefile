@@ -22,6 +22,10 @@ run-grayscale:
 run-cannyedge:
 	cargo run --bin imgapp-cannyedge
 
+.PHONY: run-cannyedge2
+run-cannyedge2:
+	cargo run --bin imgapp-cannyedge2
+
 .PHONY: run-gaussianblur
 run-gaussianblur:
 	cargo run --bin imgapp-gaussianblur
