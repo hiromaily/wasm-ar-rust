@@ -1,0 +1,27 @@
+[package]
+name = "image-apps"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+image = "0.25"
+imageproc = "0.25"
+
+[[bin]]
+name = "imgapp-grayscale"
+path = "bin/app_grayscale.rs"
+
+[[bin]]
+name = "imgapp-cannyedge"
+path = "bin/app_cannyedge.rs"
+
+[[bin]]
+name = "imgapp-gaussianblur"
+path = "bin/app_gaussianblur.rs"
+
+[[bin]]
+name = "imgapp-thresholding"
+path = "bin/app_thresholding.rs"
+
+[lints]
+workspace = true

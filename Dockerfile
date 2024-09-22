@@ -27,7 +27,7 @@ WORKDIR /workspace
 COPY . .
 
 # build multiple workspaces
-RUN make build
-#RUN ./build.sh
+#RUN make build
+RUN ./build.sh
 
 CMD ["bash"]
