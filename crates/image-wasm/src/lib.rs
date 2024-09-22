@@ -1,4 +1,4 @@
-use image::{ImageBuffer, Luma};
+use image::{ImageBuffer, Luma, Rgba};
 use imageproc::edges::canny;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
@@ -15,12 +15,20 @@ pub fn process_image(input: &[u8], width: u32, height: u32) -> Vec<u8> {
     // 1. load image
     // let img = ImageBuffer::<Luma<u8>, _>::from_raw(width, height, input)
     //     .expect("Failed to create ImageBuffer");
-    let img: ImageBuffer<Luma<u8>, Vec<u8>> =
+    let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
         ImageBuffer::from_raw(width, height, input.to_vec()).expect("Failed to create ImageBuffer");
 
-    // 2. detect canny edge
-    let edges = canny(&img, 50.0, 100.0);
+    // 2. to grayscale
+    let gray_img: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::from_fn(width, height, |x, y| {
+        let pixel = img.get_pixel(x, y);
+        let gray =
+            (0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32) as u8;
+        Luma([gray])
+    });
 
-    // 3. return
+    // 3. detect canny edge
+    let edges = canny(&gray_img, 50.0, 100.0);
+
+    // 4. return
     edges.into_raw()
 }

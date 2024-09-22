@@ -2,6 +2,9 @@
 name = "image-wasm"
 version = "0.1.0"
 edition = "2021"
+description = "WASM example for Canny Edge Detection using Rust and Svelte"
+repository = "https://github.com/hiromaily/wasm-ar-rust"
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib"]
