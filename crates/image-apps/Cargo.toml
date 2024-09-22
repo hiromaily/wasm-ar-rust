@@ -12,6 +12,10 @@ name = "imgapp-wasm"
 path = "bin/app_wasm.rs"
 
 [[bin]]
+name = "imgapp-wasm2"
+path = "bin/app_wasm2.rs"
+
+[[bin]]
 name = "imgapp-grayscale"
 path = "bin/app_grayscale.rs"
 

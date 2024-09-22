@@ -10,6 +10,10 @@ run:
 run-wasm:
 	cargo run --bin imgapp-wasm
 
+.PHONY: run-wasm2
+run-wasm2:
+	cargo run --bin imgapp-wasm2
+
 .PHONY: run-grayscale
 run-grayscale:
 	cargo run --bin imgapp-grayscale
@@ -35,5 +39,5 @@ run-meanfilter:
 	cargo run --bin imgapp-meanfilter
 
 .PHONY: run-linedetection
-run-meanfilter:
+run-linedetection:
 	cargo run --bin imgapp-line-detection

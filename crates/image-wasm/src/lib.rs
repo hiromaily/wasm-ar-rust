@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose, Engine as _};
 use image::{
-    codecs::png::PngEncoder, ExtendedColorType, ImageBuffer, ImageEncoder, Luma, Rgba, RgbaImage,
+    codecs::png::PngEncoder, ExtendedColorType, ImageBuffer, ImageEncoder, Rgba, RgbaImage,
 };
 use imageproc::edges::canny;
 use wasm_bindgen::prelude::*;
@@ -16,18 +16,19 @@ pub fn process_image(input: &[u8], width: u32, height: u32) -> Vec<u8> {
     // console::log_1(&log_message.into());
 
     // 1. load image
-    // let img = ImageBuffer::<Luma<u8>, _>::from_raw(width, height, input)
-    //     .expect("Failed to create ImageBuffer");
     let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
         ImageBuffer::from_raw(width, height, input.to_vec()).expect("Failed to create ImageBuffer");
+    //let img = image::load_from_memory_with_format(&input, image::ImageFormat::Png).unwrap();
 
     // 2. to grayscale
-    let gray_img: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::from_fn(width, height, |x, y| {
-        let pixel = img.get_pixel(x, y);
-        let gray =
-            (0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32) as u8;
-        Luma([gray])
-    });
+    // let gray_img: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::from_fn(width, height, |x, y| {
+    //     let pixel = img.get_pixel(x, y);
+    //     let gray =
+    //         (0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32) as u8;
+    //     Luma([gray])
+    // });
+    let gray_img = image::DynamicImage::ImageRgba8(img).to_luma8();
+    //let gray_img = img.to_luma8();
 
     // 3. detect canny edge
     let edges = canny(&gray_img, 50.0, 100.0);
