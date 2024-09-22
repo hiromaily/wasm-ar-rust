@@ -1,4 +1,7 @@
-use image::{ImageBuffer, Luma, Rgba, RgbaImage};
+use base64::{engine::general_purpose, Engine as _};
+use image::{
+    codecs::png::PngEncoder, ExtendedColorType, ImageBuffer, ImageEncoder, Luma, Rgba, RgbaImage,
+};
 use imageproc::edges::canny;
 use wasm_bindgen::prelude::*;
 //use web_sys::console;
@@ -38,4 +41,20 @@ pub fn process_image(input: &[u8], width: u32, height: u32) -> Vec<u8> {
 
     // 5. return
     rgba_img.into_raw()
+}
+
+#[wasm_bindgen]
+pub fn save_image(input: &[u8], width: u32, height: u32) -> String {
+    let img: RgbaImage =
+        ImageBuffer::from_raw(width, height, input.to_vec()).expect("Failed to create ImageBuffer");
+
+    // Encode the image as PNG
+    let mut buf = Vec::new();
+    let encoder = PngEncoder::new(&mut buf);
+    encoder
+        .write_image(img.as_raw(), width, height, ExtendedColorType::Rgba8)
+        .expect("Failed to write image to buffer");
+
+    // Return Base64 encoded string
+    general_purpose::STANDARD.encode(&buf)
 }
