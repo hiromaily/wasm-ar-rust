@@ -10,9 +10,9 @@ run:
 run-phash:
 	cargo run --bin imadetect-phash
 
-.PHONY: run-phash2
-run-phash2:
-	cargo run --bin imadetect-phash2
+.PHONY: run-rect-phash
+run-rect-phash:
+	cargo run --bin imadetect-rect-phash
 
 .PHONY: run-template-matching
 run-template-matching:

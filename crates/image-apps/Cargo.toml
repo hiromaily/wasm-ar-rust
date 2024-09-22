@@ -24,10 +24,6 @@ name = "imgapp-cannyedge"
 path = "bin/app_cannyedge.rs"
 
 [[bin]]
-name = "imgapp-cannyedge2"
-path = "bin/app_cannyedge2.rs"
-
-[[bin]]
 name = "imgapp-gaussianblur"
 path = "bin/app_gaussianblur.rs"
 

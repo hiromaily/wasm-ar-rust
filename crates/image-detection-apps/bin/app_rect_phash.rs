@@ -1,4 +1,5 @@
 use image::{GenericImageView, GrayImage};
+use image_hasher::HasherConfig;
 use imageproc::{contours, edges::canny, rect::Rect};
 
 // detect target image
@@ -7,6 +8,11 @@ fn main() {
     // 1. load image
     println!("1. load image");
     let img = image::open("./images/web1.png").expect("Failed to open input image");
+    let poi_img = image::open("images/poi-s.png").unwrap();
+
+    // calculate hash by pHash (Perceptual Hash)
+    let hasher = HasherConfig::new().to_hasher();
+    let poi_hash = hasher.hash_image(&poi_img);
 
     // 2. transform to grayscale
     println!("2. transform to grayscale");
@@ -33,7 +39,7 @@ fn main() {
         let aspect_ratio = bounding_rect.width() as f32 / bounding_rect.height() as f32;
         //println!("aspect_ratio: {:?}", aspect_ratio);
         // 0.58 must be the best aspect_ratio
-        if aspect_ratio < 0.8 && aspect_ratio > 0.4 {
+        if aspect_ratio < 0.8 && aspect_ratio > 0.5 {
             let rect = Rect::at(bounding_rect.left() as i32, bounding_rect.top() as i32)
                 .of_size(bounding_rect.width(), bounding_rect.height());
 
@@ -59,6 +65,11 @@ fn main() {
             // Convert the cropped image to a GrayImage
             let sub_img_gray = GrayImage::from_raw(rect.width(), rect.height(), sub_img.into_raw())
                 .expect("Failed to create GrayImage");
+
+            // phash
+            let bg_hash = hasher.hash_image(&sub_img_gray);
+            let similarity = bg_hash.dist(&poi_hash);
+            println!("similarity: bg: {:?}", similarity);
 
             // Save or process the detected rectangle region
             sub_img_gray
