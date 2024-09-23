@@ -1,8 +1,14 @@
 <script lang="ts">
-import * as wasm from "image-effect-wasm";
+import * as wasm from "image-detection-wasm";
 import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
+
+interface WasmResponse {
+  raw_data: number[];
+  min_value: number;
+  min_value_location: [number, number];
+}
 
 // Element
 let video: HTMLVideoElement;
@@ -60,7 +66,7 @@ const setupEvent = () => {
 };
 
 // process each frame
-const processFrame = (timestamp: number) => {
+const processFrame = async (timestamp: number) => {
   try {
     if (!initialized || !context) return;
 
@@ -75,11 +81,18 @@ const processFrame = (timestamp: number) => {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
     // call wasm function
-    const rgbaBuffer = wasm.process_image(
+    console.log("call wasm.detect_image()");
+    const response = await wasm.detect_image(
       new Uint8Array(imageData.data.buffer),
       canvas.width,
       canvas.height,
     );
+    // check response if error
+    if (response instanceof Error) throw response;
+    const wasmResp = response as unknown as WasmResponse;
+
+    const rgbaBuffer = wasmResp.raw_data;
+    console.log("response.min_value:", wasmResp.min_value);
 
     const outputImageData = new ImageData(
       new Uint8ClampedArray(rgbaBuffer),

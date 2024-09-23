@@ -3,7 +3,8 @@ use imageproc::{drawing::draw_hollow_rect_mut, rect::Rect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
-//use web_sys::console;
+use web_sys::console;
+//use wasm_bindgen_futures::spawn_local;
 
 // workspace
 use template_matching::{find_extremes, match_template, MatchTemplateMethod};
@@ -18,64 +19,123 @@ pub struct Response {
     pub min_value_location: (u32, u32),
 }
 
+// #[wasm_bindgen(start)]
+// pub fn start() {
+//     spawn_local(async {
+//         match initialize_gpu().await {
+//             Ok(_) => console::log_1(&"WebGPU initialized successfully".into()),
+//             Err(e) => console::log_1(&format!("Failed to initialize WebGPU: {:?}", e).into()),
+//         }
+//     });
+// }
+
+// Note: this still emit panic on wasm
+// fn safe_function_call(
+//     gray_web_img: &ImageBuffer<Luma<f32>, Vec<f32>>,
+//     gray_template_img: &ImageBuffer<Luma<f32>, Vec<f32>>,
+// ) -> anyhow::Result<Image<'static>> {
+//     console::log_1(&"safe_function_call() is called".to_string().into());
+//     let result = panic::catch_unwind(|| {
+//         match_template(
+//             gray_web_img,
+//             gray_template_img,
+//             MatchTemplateMethod::SumOfSquaredDifferences,
+//         )
+//     });
+
+//     match result {
+//         Ok(result_img) => Ok(result_img),
+//         Err(_) => Err(anyhow::anyhow!(
+//             "Caught a panic! The match_template() failed."
+//         )),
+//     }
+// }
+
 #[wasm_bindgen]
-pub fn detect_image(input: &[u8], width: u32, height: u32) -> JsValue {
-    // debug log
-    // let log_message = format!(
-    //     "input: {:?}, width: {:?}, height: {:?}",
-    //     input, width, height
-    // );
-    // console::log_1(&log_message.into());
+pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsValue, JsValue> {
+    console_error_panic_hook::set_once();
 
-    // 1. load image
-    let web_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
-        ImageBuffer::from_raw(width, height, input.to_vec()).expect("Failed to create ImageBuffer");
-    let web_dyn_img = image::DynamicImage::ImageRgba8(web_img);
+    // error handling to avoid panic
+    let result = (|| {
+        // debug log
+        // console::log_1(
+        //     &format!(
+        //         "input: {:?}, width: {:?}, height: {:?}",
+        //         input, width, height
+        //     )
+        //     .into(),
+        // );
 
-    let template_img = image::load_from_memory_with_format(TEMPLATE_IMAGE, image::ImageFormat::Png)
-        .expect("Failed to create ImageBuffer from template");
+        // 1. load image
+        console::log_1(&"1. load image".to_string().into());
+        let web_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            ImageBuffer::from_raw(width, height, input.to_vec())
+                .ok_or_else(|| anyhow::anyhow!("Failed to create ImageBuffer"))?;
+        let web_dyn_img = image::DynamicImage::ImageRgba8(web_img);
 
-    // 2. to grayscale
-    let gray_web_img = web_dyn_img.to_luma32f();
-    let gray_template_img = template_img.to_luma32f();
+        let template_img =
+            image::load_from_memory_with_format(TEMPLATE_IMAGE, image::ImageFormat::Png)
+                .map_err(|_| anyhow::anyhow!("Failed to create ImageBuffer from template"))?;
 
-    // 3. template matching
-    let result_img = match_template(
-        &gray_web_img,
-        &gray_template_img,
-        MatchTemplateMethod::SumOfSquaredDifferences,
-    );
+        // 2. to grayscale
+        console::log_1(&"2. to grayscale image".to_string().into());
+        let gray_web_img = web_dyn_img.to_luma32f();
+        let gray_template_img = template_img.to_luma32f();
 
-    // 4. find min & max values
-    let result = find_extremes(&result_img);
-    // println!("Min value: {:?}", result.min_value);
-    // println!("Min position: {:?}", result.min_value_location);
+        // 3. template matching
+        console::log_1(&"3. template matching".to_string().into());
+        // FIXME: on wasm
+        // - match_template() could occur panic on WASM
+        // - however, catch_unwind() doesn't work on WASM
+        let result_img = match_template(
+            &gray_web_img,
+            &gray_template_img,
+            MatchTemplateMethod::SumOfSquaredDifferences,
+        );
+        // let result_img: Image<'static> = match safe_function_call(&gray_web_img, &gray_template_img)
+        // {
+        //     Ok(img) => img,
+        //     Err(e) => {
+        //         return Err(e);
+        //     }
+        // };
 
-    // 5. draw a rectangle for the match location
-    let mut img_rgb = web_dyn_img.into_rgb8();
-    let (tw, th) = (template_img.width(), template_img.height());
-    draw_hollow_rect_mut(
-        &mut img_rgb,
-        Rect::at(
-            result.min_value_location.0 as i32,
-            result.min_value_location.1 as i32,
-        )
-        .of_size(tw, th),
-        Rgb([255, 0, 0]),
-    );
+        // 4. find min & max values
+        console::log_1(&"4. find min/max value".to_string().into());
+        let result = find_extremes(&result_img);
 
-    // 6. convert result to rgba for web
-    let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
-    for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
-        let edge_value = img_rgb.get_pixel(x, y)[0];
-        *pixel = Rgba([edge_value, edge_value, edge_value, 255]);
-    }
+        // 5. draw a rectangle for the match location
+        console::log_1(&"5. draw a rectangle".to_string().into());
+        let mut img_rgb = web_dyn_img.into_rgb8();
+        let (tw, th) = (template_img.width(), template_img.height());
+        draw_hollow_rect_mut(
+            &mut img_rgb,
+            Rect::at(
+                result.min_value_location.0 as i32,
+                result.min_value_location.1 as i32,
+            )
+            .of_size(tw, th),
+            Rgb([255, 0, 0]),
+        );
 
-    // 7. return
-    let res = Response {
-        raw_data: rgba_img.into_raw(),
-        min_value: result.min_value,
-        min_value_location: result.min_value_location,
-    };
-    to_value(&res).unwrap()
+        // 6. convert result to rgba for web
+        console::log_1(&"6. convert result to rgba for web".to_string().into());
+        let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
+        for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
+            let edge_value = img_rgb.get_pixel(x, y)[0];
+            *pixel = Rgba([edge_value, edge_value, edge_value, 255]);
+        }
+
+        // 7. return
+        console::log_1(&"7. return".to_string().into());
+        let res = Response {
+            raw_data: rgba_img.into_raw(),
+            min_value: result.min_value,
+            min_value_location: result.min_value_location,
+        };
+
+        to_value(&res).map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e))
+    })();
+
+    result.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
 }
