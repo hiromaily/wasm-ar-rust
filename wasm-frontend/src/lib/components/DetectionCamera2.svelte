@@ -1,11 +1,9 @@
 <script lang="ts">
 import * as wasm from "image-detection-wasm";
 import { onMount } from "svelte";
-import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
 interface WasmResponse {
-  raw_data: number[];
   min_value: number;
   min_value_location: [number, number];
 }
@@ -18,6 +16,7 @@ let context: CanvasRenderingContext2D;
 // Flag
 let initialized = false;
 let showHelp = false;
+const isDetected = false;
 
 // FPS
 let fps = 0;
@@ -35,35 +34,13 @@ const setupVideo = async () => {
   }
 };
 
-const setupCanvas = () => {
-  canvas = document.createElement("canvas");
-  document.body.appendChild(canvas);
-  canvas.style.position = "absolute";
-  canvas.style.top = "0";
-  canvas.style.left = "0";
-  canvas.width = video.videoWidth; // 640
-  canvas.height = video.videoHeight; // 480
-  context = canvas.getContext("2d")!;
-
-  // invisible or full screen
-  //canvas.style.display = "none";
-};
-
 const setupEvent = () => {
   // button event
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       toggleFullScreen();
-    } else if (event.key === "s" || event.key === "S") {
-      console.log("S: saveOutputImage");
-      saveOutputImage(context, canvas);
-    } else if (event.key === "o" || event.key === "O") {
-      console.log("O: saveOriginalImage");
-      saveOriginalImage(context, video);
     } else if (event.key === "h" || event.key === "H") {
       showHelp = !showHelp;
-    } else if (event.key === "w" || event.key === "W") {
-      toggleCanvasFullScreen();
     }
   });
 };
@@ -71,7 +48,10 @@ const setupEvent = () => {
 // process each frame
 const processFrame = async (timestamp: number) => {
   try {
-    if (!initialized || !context) return;
+    if (!initialized) return;
+
+    const w = video.videoWidth;
+    const h = video.videoHeight;
 
     // calculate and update FPS
     if (lastTimestamp) {
@@ -81,34 +61,23 @@ const processFrame = async (timestamp: number) => {
     lastTimestamp = timestamp;
 
     // video image
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    context.drawImage(video, 0, 0, w, h);
+    const imageData = context.getImageData(0, 0, w, h);
     // call wasm function
-    console.log("call wasm.detect_draw_image()");
-    const response = await wasm.detect_draw_image(
+    console.log("call wasm.detect_image()");
+    const response = await wasm.detect_image(
       new Uint8Array(imageData.data.buffer),
-      canvas.width,
-      canvas.height,
+      w,
+      h,
     );
     // check response if error
     if (response instanceof Error) throw response;
     const wasmResp = response as unknown as WasmResponse;
 
-    const rgbaBuffer = wasmResp.raw_data;
+    console.log(wasmResp);
     if (wasmResp.min_value < 3500) {
-      // e.g. 3000
-      // detectionThreshold
-      // detected!!
       console.log("response.min_value:", wasmResp.min_value);
     }
-
-    const outputImageData = new ImageData(
-      new Uint8ClampedArray(rgbaBuffer),
-      canvas.width,
-      canvas.height,
-    );
-    // reflect images on canvas context
-    context.putImageData(outputImageData, 0, 0);
 
     requestAnimationFrame(processFrame);
   } catch (error) {
@@ -125,19 +94,15 @@ const toggleFullScreen = () => {
   }
 };
 
-// full screen for canvas
-const toggleCanvasFullScreen = () => {
-  if (canvas.requestFullscreen) {
-    canvas.requestFullscreen();
-  }
-};
-
 onMount(async () => {
   try {
     // initialize
     await setupVideo();
-    setupCanvas();
     setupEvent();
+
+    // canvas
+    canvas = document.createElement("canvas");
+    context = canvas.getContext("2d")!;
 
     const unixTimestamp = Math.floor(new Date().getTime() / 1000);
     processFrame(unixTimestamp);

@@ -54,7 +54,7 @@ async fn main() {
             result.min_value_location.1 as i32,
         )
         .of_size(tw, th),
-        Rgb([255, 0, 0]),
+        Rgb([255, 0, 0]), // red
     );
 
     // 6. save result
