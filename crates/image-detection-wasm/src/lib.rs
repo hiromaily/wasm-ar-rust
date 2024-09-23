@@ -11,19 +11,6 @@ use template_matching::{find_extremes, match_template, MatchTemplateMethod};
 // include_bytes! embeds assets when compiling
 const TEMPLATE_IMAGE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/poi-s.png"));
 
-#[derive(Serialize, Deserialize)]
-pub struct ImageDetectedResponse {
-    pub raw_data: Vec<u8>,
-    pub min_value: f32,
-    pub min_value_location: (u32, u32),
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct DetectedResponse {
-    pub min_value: f32,
-    pub min_value_location: (u32, u32),
-}
-
 // #[wasm_bindgen(start)]
 // pub fn start() {
 //     spawn_local(async {
@@ -37,6 +24,13 @@ pub struct DetectedResponse {
 // Helper for error conversion to JsValue
 fn convert_error(error: anyhow::Error) -> JsValue {
     JsValue::from_str(&format!("{:?}", error))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ImageAndDetectedResponse {
+    pub raw_data: Vec<u8>,
+    pub min_value: f32,
+    pub min_value_location: (u32, u32),
 }
 
 #[wasm_bindgen]
@@ -92,13 +86,18 @@ pub async fn detect_draw_image(input: &[u8], width: u32, height: u32) -> Result<
         //     max_value_location: (113, 147),
         // };
 
+        //---------------------------------------------------------------------
+        // FIXME: somehow rectangle is not drawn when `match_template()`` run
+        //  my guessing is GPU functionality on WASM may be buggy.
+        //  because standalone app doesn't have a issue (image-detection-apps/bin/app_template_matching3.rs)
+        //---------------------------------------------------------------------
+
         // 5. convert to RGB
         //console::log_1(&"5. convert web_img to RGB".to_string().into());
         let mut img_rgb = web_dyn_img.into_rgb8();
         let (tw, th) = (template_img.width(), template_img.height());
 
         // 6. draw a rectangle for the match location
-        // FIXME: somehow rectangle is not drawn when `match_template()`` run
         //console::log_1(&"6. draw a rectangle".to_string().into());
         draw_hollow_rect_mut(
             &mut img_rgb,
@@ -120,7 +119,7 @@ pub async fn detect_draw_image(input: &[u8], width: u32, height: u32) -> Result<
 
         // 7. return
         //console::log_1(&"8. return inner function".to_string().into());
-        let res = ImageDetectedResponse {
+        let res = ImageAndDetectedResponse {
             raw_data: rgba_img.into_raw(),
             min_value: result.min_value, // under 3000 would be threshold
             min_value_location: result.min_value_location,
@@ -133,6 +132,13 @@ pub async fn detect_draw_image(input: &[u8], width: u32, height: u32) -> Result<
     //console::log_1(&"9. final return".to_string().into());
     //result.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
     result.map_err(convert_error)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DetectedResponse {
+    pub min_value: f32,
+    pub min_value_location: (u32, u32),
+    pub template_size: (u32, u32),
 }
 
 #[wasm_bindgen]
@@ -170,6 +176,7 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
         let res = DetectedResponse {
             min_value: result.min_value, // under 3000 would be threshold
             min_value_location: result.min_value_location,
+            template_size: (template_img.width(), template_img.height()),
         };
 
         to_value(&res).map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e))

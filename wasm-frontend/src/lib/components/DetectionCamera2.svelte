@@ -1,22 +1,31 @@
 <script lang="ts">
 import * as wasm from "image-detection-wasm";
 import { onMount } from "svelte";
+import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
+// wasm response
 interface WasmResponse {
+  raw_data: number[];
   min_value: number;
   min_value_location: [number, number];
+  template_size: [number, number]; // 143, 245
 }
 
-// Element
+// video
 let video: HTMLVideoElement;
-let canvas: HTMLCanvasElement;
-let context: CanvasRenderingContext2D;
+
+// canvas for input data for wasm function
+let videoCanvas: HTMLCanvasElement; // reference of HTML <canvas> element
+let videoContext: CanvasRenderingContext2D; // 2d rendering context of canvas
+
+// canvas for output data by drawing
+let drawingCanvas: HTMLCanvasElement; // reference of HTML <canvas> element
+let drawingContext: CanvasRenderingContext2D; // 2d rendering context of canvas
 
 // Flag
 let initialized = false;
 let showHelp = false;
-const isDetected = false;
 
 // FPS
 let fps = 0;
@@ -34,13 +43,62 @@ const setupVideo = async () => {
   }
 };
 
-const setupEvent = () => {
+const setupVideoCanvas = () => {
+  videoCanvas = document.createElement("canvas");
+  document.body.appendChild(videoCanvas);
+  videoCanvas.style.position = "absolute";
+  videoCanvas.style.top = "0";
+  videoCanvas.style.left = "0";
+  // canvas.style.width = "50%";
+  // canvas.style.height = "50%";
+
+  // Note:
+  //  Don't change size, it would break input data of wasm function
+  videoCanvas.width = video.videoWidth; // 640
+  videoCanvas.height = video.videoHeight; // 480
+  videoContext = videoCanvas.getContext("2d")!;
+
+  // invisible
+  videoCanvas.style.display = "none";
+};
+
+const setupDrawingCanvas = () => {
+  drawingCanvas = document.createElement("canvas");
+  document.body.appendChild(drawingCanvas);
+  drawingCanvas.style.position = "absolute";
+  drawingCanvas.style.top = "0";
+  drawingCanvas.style.left = "0";
+  // canvas.style.width = "50%";
+  // canvas.style.height = "50%";
+
+  // Note:
+  //  Don't change size, it would break input data of wasm function
+  drawingCanvas.width = video.videoWidth; // 640
+  drawingCanvas.height = video.videoHeight; // 480
+  drawingContext = drawingCanvas.getContext("2d")!;
+
+  // invisible
+  //drawingCanvas.style.display = "none";
+};
+
+const setupEvent = (
+  context: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+) => {
   // button event
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       toggleFullScreen();
+    } else if (event.key === "s" || event.key === "S") {
+      console.log("S: saveOutputImage");
+      saveOutputImage(context, canvas);
+    } else if (event.key === "o" || event.key === "O") {
+      console.log("O: saveOriginalImage");
+      saveOriginalImage(context, video);
     } else if (event.key === "h" || event.key === "H") {
       showHelp = !showHelp;
+    } else if (event.key === "w" || event.key === "W") {
+      toggleCanvasFullScreen(canvas);
     }
   });
 };
@@ -48,10 +106,7 @@ const setupEvent = () => {
 // process each frame
 const processFrame = async (timestamp: number) => {
   try {
-    if (!initialized) return;
-
-    const w = video.videoWidth;
-    const h = video.videoHeight;
+    if (!initialized || !videoContext) return;
 
     // calculate and update FPS
     if (lastTimestamp) {
@@ -61,22 +116,38 @@ const processFrame = async (timestamp: number) => {
     lastTimestamp = timestamp;
 
     // video image
-    context.drawImage(video, 0, 0, w, h);
-    const imageData = context.getImageData(0, 0, w, h);
+    videoContext.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+    const imageData = videoContext.getImageData(
+      0,
+      0,
+      videoCanvas.width,
+      videoCanvas.height,
+    );
+
     // call wasm function
     console.log("call wasm.detect_image()");
     const response = await wasm.detect_image(
       new Uint8Array(imageData.data.buffer),
-      w,
-      h,
+      videoCanvas.width,
+      videoCanvas.height,
     );
     // check response if error
     if (response instanceof Error) throw response;
     const wasmResp = response as unknown as WasmResponse;
-
-    console.log(wasmResp);
     if (wasmResp.min_value < 3500) {
+      // detected!!
+      console.log("response:", wasmResp);
       console.log("response.min_value:", wasmResp.min_value);
+
+      // draw rectangle
+      drawingContext.strokeStyle = "black";
+      drawingContext.lineWidth = 2; // line size
+      const [x, y] = wasmResp.min_value_location;
+      const [width, height] = wasmResp.template_size;
+      drawingContext.strokeRect(x, y, width, height); // x, y, width, height
+    } else {
+      // clear
+      drawingContext.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
     }
 
     requestAnimationFrame(processFrame);
@@ -94,16 +165,22 @@ const toggleFullScreen = () => {
   }
 };
 
+// full screen for canvas
+const toggleCanvasFullScreen = (canvas: HTMLCanvasElement) => {
+  if (canvas.requestFullscreen) {
+    canvas.requestFullscreen();
+  }
+};
+
 onMount(async () => {
   try {
     // initialize
     await setupVideo();
-    setupEvent();
+    setupVideoCanvas();
+    setupDrawingCanvas();
+    setupEvent(videoContext, videoCanvas);
 
-    // canvas
-    canvas = document.createElement("canvas");
-    context = canvas.getContext("2d")!;
-
+    // start processFrame
     const unixTimestamp = Math.floor(new Date().getTime() / 1000);
     processFrame(unixTimestamp);
 
@@ -115,7 +192,7 @@ onMount(async () => {
 });
 </script>
 
-<video bind:this={video} autoplay playsinline></video>
+<video id="video" bind:this={video} autoplay playsinline></video>
 
 <div
   id="fps"

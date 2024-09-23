@@ -4,6 +4,7 @@ import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
+// wasm response
 interface WasmResponse {
   raw_data: number[];
   min_value: number;
@@ -12,8 +13,8 @@ interface WasmResponse {
 
 // Element
 let video: HTMLVideoElement;
-let canvas: HTMLCanvasElement;
-let context: CanvasRenderingContext2D;
+let canvas: HTMLCanvasElement; // reference of HTML <canvas> element
+let context: CanvasRenderingContext2D; // 2d rendering context of canvas
 
 // Flag
 let initialized = false;
@@ -83,6 +84,7 @@ const processFrame = async (timestamp: number) => {
     // video image
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
     // call wasm function
     console.log("call wasm.detect_draw_image()");
     const response = await wasm.detect_draw_image(
@@ -93,22 +95,20 @@ const processFrame = async (timestamp: number) => {
     // check response if error
     if (response instanceof Error) throw response;
     const wasmResp = response as unknown as WasmResponse;
-
-    const rgbaBuffer = wasmResp.raw_data;
     if (wasmResp.min_value < 3500) {
-      // e.g. 3000
-      // detectionThreshold
       // detected!!
       console.log("response.min_value:", wasmResp.min_value);
     }
 
-    const outputImageData = new ImageData(
-      new Uint8ClampedArray(rgbaBuffer),
-      canvas.width,
-      canvas.height,
-    );
-    // reflect images on canvas context
-    context.putImageData(outputImageData, 0, 0);
+    // Note: For now, it's useless to draw output image
+    // const rgbaBuffer = wasmResp.raw_data;
+    // const outputImageData = new ImageData(
+    //   new Uint8ClampedArray(rgbaBuffer),
+    //   canvas.width,
+    //   canvas.height,
+    // );
+    // // reflect output images on canvas context
+    // context.putImageData(outputImageData, 0, 0);
 
     requestAnimationFrame(processFrame);
   } catch (error) {
@@ -150,7 +150,7 @@ onMount(async () => {
 });
 </script>
 
-<video bind:this={video} autoplay playsinline></video>
+<video id="video" bind:this={video} autoplay playsinline></video>
 
 <div
   id="fps"

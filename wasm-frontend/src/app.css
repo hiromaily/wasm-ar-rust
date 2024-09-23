@@ -16,8 +16,29 @@ body {
   display: flex;
 }
 
-video {
+#video {
   width: 100vw;
   height: 100vh;
   object-fit: cover;
+}
+
+#video-off {
+  display: none;
+}
+
+#canvas-full {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+}
+
+#canvas-half {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50vw;
+  height: 50vh;
 }
