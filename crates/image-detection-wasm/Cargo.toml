@@ -1,0 +1,38 @@
+[package]
+name = "image-detection-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WASM example for Template Matching using Rust and Svelte"
+repository = "https://github.com/hiromaily/wasm-ar-rust"
+license = "MIT"
+
+build = "src/build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# workspace
+template-matching = { path = "../template-matching" }
+
+wasm-bindgen = "0.2"
+# https://rustwasm.github.io/wasm-bindgen/reference/arbitrary-data-with-serde.html
+serde-wasm-bindgen = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = [
+    "png",
+    "jpeg",
+    "bmp",
+] }
+imageproc = "0.25"
+web-sys = { version = "0.3", features = ["console"] }
+
+[profile.release]
+opt-level = "z" # To create a smaller binary
+
+# For Apple Silicon
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lints]
+workspace = true

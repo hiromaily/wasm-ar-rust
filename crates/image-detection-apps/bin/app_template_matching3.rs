@@ -42,7 +42,7 @@ fn main() {
     // Min value: 4267.434
     // Min position: (239, 124)
 
-    // 一致位置の矩形を描画
+    // 5. draw a rectangle for the match location
     let mut img_rgb = bg_img.into_rgb8();
     let (tw, th) = (template_img.width(), template_img.height());
     draw_hollow_rect_mut(
@@ -55,7 +55,7 @@ fn main() {
         Rgb([255, 0, 0]),
     );
 
-    // save result
+    // 6. save result
     img_rgb
         .save("output/app_template_matching3.png")
         .expect("Failed to save image");
