@@ -1,7 +1,3 @@
-//! GPU-accelerated template matching.
-//!
-//! Faster alternative to [imageproc::template_matching](https://docs.rs/imageproc/latest/imageproc/template_matching/index.html).
-
 #![deny(clippy::all)]
 #![allow(dead_code)]
 #![allow(unused_variables)]
@@ -16,22 +12,21 @@ pub enum MatchTemplateMethod {
 }
 
 /// Slides a template over the input and scores the match at each point using the requested method.
-///
 /// This is a shorthand for:
 /// ```ignore
-/// let mut matcher = TemplateMatcher::new();
-/// matcher.match_template(input, template, method);
-/// matcher.wait_for_result().unwrap()
+/// let mut matcher = TemplateMatcher::new().await;
+/// matcher.match_template(input, template, method).await;
+/// matcher.wait_for_result().await.unwrap()
 /// ```
-/// You can use  [find_extremes] to find minimum and maximum values, and their locations in the result image.
-pub fn match_template<'a>(
+/// You can use [find_extremes] to find minimum and maximum values, and their locations in the result image.
+pub async fn match_template<'a>(
     input: impl Into<Image<'a>>,
     template: impl Into<Image<'a>>,
     method: MatchTemplateMethod,
 ) -> Image<'static> {
-    let mut matcher = TemplateMatcher::new();
-    matcher.match_template(input, template, method);
-    matcher.wait_for_result().unwrap()
+    let mut matcher = TemplateMatcher::new().await;
+    matcher.match_template(input, template, method).await;
+    matcher.wait_for_result().await.unwrap()
 }
 
 /// Finds the smallest and largest values and their locations in an image.
@@ -136,14 +131,8 @@ pub struct TemplateMatcher {
     matching_ongoing: bool,
 }
 
-impl Default for TemplateMatcher {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl TemplateMatcher {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             flags: wgpu::InstanceFlags::default(),
@@ -151,31 +140,27 @@ impl TemplateMatcher {
             gles_minor_version: wgpu::Gles3MinorVersion::default(),
         });
 
-        let adapter = pollster::block_on(async {
-            instance
-                .request_adapter(&wgpu::RequestAdapterOptions {
-                    power_preference: wgpu::PowerPreference::HighPerformance,
-                    compatible_surface: None,
-                    force_fallback_adapter: false,
-                })
-                .await
-                .expect("Adapter request failed")
-        });
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: None,
+                force_fallback_adapter: false,
+            })
+            .await
+            .expect("Adapter request failed");
 
-        let (device, queue) = pollster::block_on(async {
-            adapter
-                .request_device(
-                    &wgpu::DeviceDescriptor {
-                        label: None,
-                        required_features: wgpu::Features::empty(),
-                        required_limits: wgpu::Limits::default(),
-                        memory_hints: wgpu::MemoryHints::default(),
-                    },
-                    None,
-                )
-                .await
-                .expect("Device request failed")
-        });
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: None,
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                },
+                None,
+            )
+            .await
+            .expect("Device request failed");
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("../shaders/matching.wgsl"));
 
@@ -263,7 +248,7 @@ impl TemplateMatcher {
 
     /// Waits for the latest [match_template] execution and returns the result.
     /// Returns [None] if no matching was started.
-    pub fn wait_for_result(&mut self) -> Option<Image<'static>> {
+    pub async fn wait_for_result(&mut self) -> Option<Image<'static>> {
         if !self.matching_ongoing {
             return None;
         }
@@ -277,25 +262,20 @@ impl TemplateMatcher {
 
         self.device.poll(wgpu::Maintain::Wait);
 
-        pollster::block_on(async {
-            let result;
-
-            if let Some(Ok(())) = receiver.receive().await {
-                let data = buffer_slice.get_mapped_range();
-                result = bytemuck::cast_slice(&data).to_vec();
-                drop(data);
-                self.staging_buffer.as_ref().unwrap().unmap();
-            } else {
-                result = vec![0.0; (result_width * result_height) as usize]
-            };
-
+        if let Some(Ok(())) = receiver.receive().await {
+            let data = buffer_slice.get_mapped_range();
+            let result = bytemuck::cast_slice(&data).to_vec();
+            drop(data);
+            self.staging_buffer.as_ref().unwrap().unmap();
             Some(Image::new(result, result_width as _, result_height as _))
-        })
+        } else {
+            None
+        }
     }
 
     /// Slides a template over the input and scores the match at each point using the requested method.
     /// To get the result of the matching, call [wait_for_result].
-    pub fn match_template<'a>(
+    pub async fn match_template<'a>(
         &mut self,
         input: impl Into<Image<'a>>,
         template: impl Into<Image<'a>>,
@@ -303,7 +283,7 @@ impl TemplateMatcher {
     ) {
         if self.matching_ongoing {
             // Discard previous result if not collected.
-            self.wait_for_result();
+            self.wait_for_result().await;
         }
 
         let input = input.into();

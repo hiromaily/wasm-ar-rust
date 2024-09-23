@@ -10,7 +10,8 @@ use template_matching::{find_extremes, match_template, MatchTemplateMethod};
 // include_bytes! embeds assets when compiling
 const TEMPLATE_IMAGE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/poi-s.png"));
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // 1. load images
     println!("1. load image");
     let bg_img = image::open("images/web1.png").unwrap();
@@ -28,11 +29,12 @@ fn main() {
 
     // 3. template matching
     println!("3. template matching");
-    let result_img = match_template(
+    let result_future = match_template(
         &gray_bg_img,
         &gray_template_img,
         MatchTemplateMethod::SumOfSquaredDifferences,
     );
+    let result_img = result_future.await;
 
     // 4. find min & max values
     println!("4. calculate min & max values");
