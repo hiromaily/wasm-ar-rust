@@ -27,6 +27,8 @@ lint:
 	cargo fmt --all
 	cargo clippy --all-targets --all-features
 
+# before run
+# `cargo install cargo-machete` is required
 .PHONY: check-deps
 check-deps:
 	cargo machete

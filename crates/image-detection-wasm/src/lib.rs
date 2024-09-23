@@ -3,8 +3,7 @@ use imageproc::{drawing::draw_hollow_rect_mut, rect::Rect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
-use web_sys::console;
-//use wasm_bindgen_futures::spawn_local;
+//use web_sys::console;
 
 // workspace
 use template_matching::{find_extremes, match_template, MatchTemplateMethod};
@@ -29,34 +28,12 @@ pub struct Response {
 //     });
 // }
 
-// Note: this still emit panic on wasm
-// fn safe_function_call(
-//     gray_web_img: &ImageBuffer<Luma<f32>, Vec<f32>>,
-//     gray_template_img: &ImageBuffer<Luma<f32>, Vec<f32>>,
-// ) -> anyhow::Result<Image<'static>> {
-//     console::log_1(&"safe_function_call() is called".to_string().into());
-//     let result = panic::catch_unwind(|| {
-//         match_template(
-//             gray_web_img,
-//             gray_template_img,
-//             MatchTemplateMethod::SumOfSquaredDifferences,
-//         )
-//     });
-
-//     match result {
-//         Ok(result_img) => Ok(result_img),
-//         Err(_) => Err(anyhow::anyhow!(
-//             "Caught a panic! The match_template() failed."
-//         )),
-//     }
-// }
-
 #[wasm_bindgen]
 pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
 
     // error handling to avoid panic
-    let result = (|| {
+    let result = async {
         // debug log
         // console::log_1(
         //     &format!(
@@ -67,7 +44,7 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
         // );
 
         // 1. load image
-        console::log_1(&"1. load image".to_string().into());
+        //console::log_1(&"1. load image".to_string().into());
         let web_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
             ImageBuffer::from_raw(width, height, input.to_vec())
                 .ok_or_else(|| anyhow::anyhow!("Failed to create ImageBuffer"))?;
@@ -78,12 +55,12 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
                 .map_err(|_| anyhow::anyhow!("Failed to create ImageBuffer from template"))?;
 
         // 2. to grayscale
-        console::log_1(&"2. to grayscale image".to_string().into());
+        //console::log_1(&"2. to grayscale image".to_string().into());
         let gray_web_img = web_dyn_img.to_luma32f();
         let gray_template_img = template_img.to_luma32f();
 
-        // 3. template matching
-        console::log_1(&"3. template matching".to_string().into());
+        // 3. template matching (async function)
+        //console::log_1(&"3. template matching".to_string().into());
         // FIXME: on wasm
         // - match_template() could occur panic on WASM
         // - however, catch_unwind() doesn't work on WASM
@@ -91,21 +68,15 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
             &gray_web_img,
             &gray_template_img,
             MatchTemplateMethod::SumOfSquaredDifferences,
-        );
-        // let result_img: Image<'static> = match safe_function_call(&gray_web_img, &gray_template_img)
-        // {
-        //     Ok(img) => img,
-        //     Err(e) => {
-        //         return Err(e);
-        //     }
-        // };
+        )
+        .await;
 
         // 4. find min & max values
-        console::log_1(&"4. find min/max value".to_string().into());
+        //console::log_1(&"4. find min/max value".to_string().into());
         let result = find_extremes(&result_img);
 
         // 5. draw a rectangle for the match location
-        console::log_1(&"5. draw a rectangle".to_string().into());
+        //console::log_1(&"5. draw a rectangle".to_string().into());
         let mut img_rgb = web_dyn_img.into_rgb8();
         let (tw, th) = (template_img.width(), template_img.height());
         draw_hollow_rect_mut(
@@ -119,7 +90,7 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
         );
 
         // 6. convert result to rgba for web
-        console::log_1(&"6. convert result to rgba for web".to_string().into());
+        //console::log_1(&"6. convert result to rgba for web".to_string().into());
         let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
         for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
             let edge_value = img_rgb.get_pixel(x, y)[0];
@@ -127,7 +98,7 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
         }
 
         // 7. return
-        console::log_1(&"7. return".to_string().into());
+        //console::log_1(&"7. return".to_string().into());
         let res = Response {
             raw_data: rgba_img.into_raw(),
             min_value: result.min_value,
@@ -135,7 +106,8 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
         };
 
         to_value(&res).map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e))
-    })();
+    }
+    .await;
 
     result.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
 }

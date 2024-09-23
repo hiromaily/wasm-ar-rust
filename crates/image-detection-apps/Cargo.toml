@@ -12,7 +12,6 @@ template-matching = { path = "../template-matching" }
 image_hasher = "2.0.0"
 image = "0.25"
 imageproc = "0.25"
-ndarray = "0.16"
 tokio = { version = "1", features = ["full"] }
 
 [[bin]]

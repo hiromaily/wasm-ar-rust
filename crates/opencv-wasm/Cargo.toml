@@ -12,10 +12,8 @@ crate-type = ["cdylib"]
 # workspace
 opencv-lib = { path = "../opencv-lib" }
 
-opencv = { version = "0.93", features = ["clang-runtime"] }
+#opencv = { version = "0.93", features = ["clang-runtime"] }
 wasm-bindgen = "0.2"
-#wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
-#serde-wasm-bindgen = "0.6"
 web-sys = { version = "0.3", features = ["console"] }
 anyhow = "1.0"
 

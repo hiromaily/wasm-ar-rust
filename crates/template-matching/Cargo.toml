@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 wgpu = "22.1"
-pollster = "0.3"
+#pollster = "0.3"
 bytemuck = { version = "1.18", features = ["derive"] }
 image = { version = "0.25", optional = true }
 futures-intrusive = "0.5"
