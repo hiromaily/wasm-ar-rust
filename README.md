@@ -36,6 +36,8 @@ First, I drew images generated from wasm into canvas area in frontend.
 
 ### Hnadling 3D data on WASM
 
+### Deploying to Serverless Hosting Platforms
+
 ## Docs
 
 [docs](./docs/README.md)

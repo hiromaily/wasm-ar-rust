@@ -1,0 +1,36 @@
+[package]
+name = "canvas-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WASM example for drawing image on canvas form WASM using Rust and Svelte"
+repository = "https://github.com/hiromaily/wasm-ar-rust"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0"
+
+# wasm specific
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "console",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "CanvasRenderingContext2d",
+] }
+console_error_panic_hook = "0.1"
+wee_alloc = "0.4.5"
+
+[profile.release]
+opt-level = "z" # To create a smaller binary
+
+# For Apple Silicon
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lints]
+workspace = true

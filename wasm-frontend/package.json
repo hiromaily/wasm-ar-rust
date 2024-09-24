@@ -24,6 +24,7 @@
   "dependencies": {
     "image-effect-wasm": "file:../crates/image-effect-wasm/public/pkg-bundler",
     "image-detection-wasm": "file:../crates/image-detection-wasm/public/pkg-bundler",
+    "canvas-wasm": "file:../crates/canvas-wasm/public/pkg-bundler",
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.3.0"
   }
