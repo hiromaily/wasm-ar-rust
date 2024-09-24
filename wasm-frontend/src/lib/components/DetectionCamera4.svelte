@@ -4,16 +4,16 @@ import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
-// DetectionCamera
+// DetectionCamera4
 //
-// 1. 2 layer from the bottom
+// 1. 3 layer from the bottom
 //  - video
-//  - canvas for input and output but output doesn't work
+//  - videoCanvas for input
+//  - drawingCanvas for drawing from wasm function
 //
 // 2. call detect_draw_image() as wasm function for detecting image location and drawing
-//
-// 3. draw output from wasm function but drawing doesn't work
-//    even if drawing by canvas API to canvas, it doesn't work
+//  - detect_draw_image works! with drawingCanvas
+// 3. reflect output iamge into drawingCanvas
 
 // wasm response
 interface WasmResponse {
@@ -22,10 +22,16 @@ interface WasmResponse {
   min_value_location: [number, number];
 }
 
-// Element
+// video
 let video: HTMLVideoElement;
-let canvas: HTMLCanvasElement; // reference of HTML <canvas> element
-let context: CanvasRenderingContext2D; // 2d rendering context of canvas
+
+// canvas for input data for wasm function
+let videoCanvas: HTMLCanvasElement; // reference of HTML <canvas> element
+let videoContext: CanvasRenderingContext2D; // 2d rendering context of canvas
+
+// canvas for output data by drawing
+let drawingCanvas: HTMLCanvasElement; // reference of HTML <canvas> element
+let drawingContext: CanvasRenderingContext2D; // 2d rendering context of canvas
 
 // Flag
 let initialized = false;
@@ -47,21 +53,48 @@ const setupVideo = async () => {
   }
 };
 
-const setupCanvas = () => {
-  canvas = document.createElement("canvas");
-  document.body.appendChild(canvas);
-  canvas.style.position = "absolute";
-  canvas.style.top = "0";
-  canvas.style.left = "0";
-  canvas.width = video.videoWidth; // 640
-  canvas.height = video.videoHeight; // 480
-  context = canvas.getContext("2d")!;
+const setupVideoCanvas = () => {
+  videoCanvas = document.createElement("canvas");
+  document.body.appendChild(videoCanvas);
+  videoCanvas.style.position = "absolute";
+  videoCanvas.style.top = "0";
+  videoCanvas.style.left = "0";
+  // canvas.style.width = "50%";
+  // canvas.style.height = "50%";
 
-  // invisible or full screen
-  //canvas.style.display = "none";
+  // Note:
+  //  Don't change size, it would break input data of wasm function
+  videoCanvas.width = video.videoWidth; // 640
+  videoCanvas.height = video.videoHeight; // 480
+  videoContext = videoCanvas.getContext("2d")!;
+
+  // invisible
+  videoCanvas.style.display = "none";
 };
 
-const setupEvent = () => {
+const setupDrawingCanvas = () => {
+  drawingCanvas = document.createElement("canvas");
+  document.body.appendChild(drawingCanvas);
+  drawingCanvas.style.position = "absolute";
+  drawingCanvas.style.top = "0";
+  drawingCanvas.style.left = "0";
+  // canvas.style.width = "50%";
+  // canvas.style.height = "50%";
+
+  // Note:
+  //  Don't change size, it would break input data of wasm function
+  drawingCanvas.width = video.videoWidth; // 640
+  drawingCanvas.height = video.videoHeight; // 480
+  drawingContext = drawingCanvas.getContext("2d")!;
+
+  // invisible
+  //drawingCanvas.style.display = "none";
+};
+
+const setupEvent = (
+  context: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+) => {
   // button event
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
@@ -75,7 +108,7 @@ const setupEvent = () => {
     } else if (event.key === "h" || event.key === "H") {
       showHelp = !showHelp;
     } else if (event.key === "w" || event.key === "W") {
-      toggleCanvasFullScreen();
+      toggleCanvasFullScreen(canvas);
     }
   });
 };
@@ -83,7 +116,7 @@ const setupEvent = () => {
 // process each frame
 const processFrame = async (timestamp: number) => {
   try {
-    if (!initialized || !context) return;
+    if (!initialized || !videoContext) return;
 
     // calculate and update FPS
     if (lastTimestamp) {
@@ -93,35 +126,36 @@ const processFrame = async (timestamp: number) => {
     lastTimestamp = timestamp;
 
     // video image
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    videoContext.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+    const imageData = videoContext.getImageData(
+      0,
+      0,
+      videoCanvas.width,
+      videoCanvas.height,
+    );
 
     // call wasm function
     console.log("call wasm.detect_draw_image()");
     const threshold = 3500;
     const response = await wasm.detect_draw_image(
       new Uint8Array(imageData.data.buffer),
-      canvas.width,
-      canvas.height,
+      videoCanvas.width,
+      videoCanvas.height,
       threshold,
     );
     // check response if error
     if (response instanceof Error) throw response;
     const wasmResp = response as unknown as WasmResponse;
-    if (wasmResp.min_value < 3500) {
-      // detected!!
-      console.log("response.min_value:", wasmResp.min_value);
-    }
 
-    // Note: For now, it's useless to draw output image
-    // const rgbaBuffer = wasmResp.raw_data;
-    // const outputImageData = new ImageData(
-    //   new Uint8ClampedArray(rgbaBuffer),
-    //   canvas.width,
-    //   canvas.height,
-    // );
-    // // reflect output images on canvas context
-    // context.putImageData(outputImageData, 0, 0);
+    // drawing
+    const rgbaBuffer = wasmResp.raw_data;
+    const outputImageData = new ImageData(
+      new Uint8ClampedArray(rgbaBuffer),
+      drawingCanvas.width,
+      drawingCanvas.height,
+    );
+    // reflect output images on canvas context
+    drawingContext.putImageData(outputImageData, 0, 0);
 
     requestAnimationFrame(processFrame);
   } catch (error) {
@@ -139,7 +173,7 @@ const toggleFullScreen = () => {
 };
 
 // full screen for canvas
-const toggleCanvasFullScreen = () => {
+const toggleCanvasFullScreen = (canvas: HTMLCanvasElement) => {
   if (canvas.requestFullscreen) {
     canvas.requestFullscreen();
   }
@@ -149,9 +183,11 @@ onMount(async () => {
   try {
     // initialize
     await setupVideo();
-    setupCanvas();
-    setupEvent();
+    setupVideoCanvas();
+    setupDrawingCanvas();
+    setupEvent(videoContext, videoCanvas);
 
+    // start processFrame
     const unixTimestamp = Math.floor(new Date().getTime() / 1000);
     processFrame(unixTimestamp);
 

@@ -36,7 +36,12 @@ pub struct ImageAndDetectedResponse {
 // detect_draw_image detects template image location and draw rectangle
 // however drawing doesn't work, it may be because of WebGPU bug
 #[wasm_bindgen]
-pub async fn detect_draw_image(input: &[u8], width: u32, height: u32) -> Result<JsValue, JsValue> {
+pub async fn detect_draw_image(
+    input: &[u8],
+    width: u32,
+    height: u32,
+    threshold: f32,
+) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
 
     // error handling to avoid panic
@@ -93,6 +98,23 @@ pub async fn detect_draw_image(input: &[u8], width: u32, height: u32) -> Result<
         //  my guessing is GPU functionality on WASM may be buggy.
         //  because standalone app doesn't have a issue (image-detection-apps/bin/app_template_matching3.rs)
         //---------------------------------------------------------------------
+
+        if result.min_value > threshold {
+            // no detection
+            // return input image
+            let web_img2: ImageBuffer<Rgba<u8>, Vec<u8>> =
+                ImageBuffer::from_raw(width, height, input.to_vec())
+                    .ok_or_else(|| anyhow::anyhow!("Failed to create ImageBuffer"))?;
+
+            let res = ImageAndDetectedResponse {
+                raw_data: web_img2.into_raw(),
+                min_value: result.min_value,
+                min_value_location: result.min_value_location,
+            };
+
+            return to_value(&res)
+                .map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e));
+        }
 
         // 5. convert to RGB
         //console::log_1(&"5. convert web_img to RGB".to_string().into());
