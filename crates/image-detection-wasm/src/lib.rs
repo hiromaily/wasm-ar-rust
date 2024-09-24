@@ -33,6 +33,8 @@ pub struct ImageAndDetectedResponse {
     pub min_value_location: (u32, u32),
 }
 
+// detect_draw_image detects template image location and draw rectangle
+// however drawing doesn't work, it may be because of WebGPU bug
 #[wasm_bindgen]
 pub async fn detect_draw_image(input: &[u8], width: u32, height: u32) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
@@ -141,6 +143,7 @@ pub struct DetectedResponse {
     pub template_size: (u32, u32),
 }
 
+// detect_image detects template image location
 #[wasm_bindgen]
 pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
@@ -184,4 +187,41 @@ pub async fn detect_image(input: &[u8], width: u32, height: u32) -> Result<JsVal
     .await;
 
     result.map_err(convert_error)
+}
+
+// draw_image draws rectangle
+#[wasm_bindgen]
+pub async fn draw_image(
+    input: &[u8],
+    width: u32,
+    height: u32,
+    loc_x: i32,
+    loc_y: i32,
+    temp_w: u32,
+    temp_h: u32,
+) -> Vec<u8> {
+    // 1. load image
+    let web_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
+        ImageBuffer::from_raw(width, height, input.to_vec()).expect("Failed to create ImageBuffer");
+    let web_dyn_img = image::DynamicImage::ImageRgba8(web_img);
+
+    // 2. convert to RGB
+    let mut img_rgb = web_dyn_img.into_rgb8();
+
+    // 3. draw a rectangle for the match location
+    draw_hollow_rect_mut(
+        &mut img_rgb,
+        Rect::at(loc_x, loc_y).of_size(temp_w, temp_h),
+        Rgb([0, 0, 0]), // black
+    );
+
+    // 4. convert result to rgba for web
+    let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
+    for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
+        let rgb_pixel = img_rgb.get_pixel(x, y);
+        *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
+    }
+
+    // 5. return
+    rgba_img.into_raw()
 }

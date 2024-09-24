@@ -4,16 +4,17 @@ import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
-// DetectionCamera2
+// DetectionCamera3
 //
 // 1. 3 layer from the bottom
 //  - video
 //  - videoCanvas for input
-//  - drawingCanvas for drawing from frontend
+//  - drawingCanvas for drawing from wasm function
 //
 // 2. call detect_image() as wasm function for only detecting image location
 //
-// 3. draw the location using drawingCanvas
+// 3. call draw_image() as wasm function for only drawing
+// 4. reflect output iamge into drawingCanvas
 
 // wasm response
 interface WasmResponse {
@@ -150,49 +151,35 @@ const processFrame = async (timestamp: number) => {
       console.log("response:", wasmResp);
       console.log("response.min_value:", wasmResp.min_value);
 
-      // draw rectangle
-      drawingContext.strokeStyle = "black";
-      drawingContext.lineWidth = 2; // line size
-      const [x, y] = wasmResp.min_value_location;
-      const [width, height] = wasmResp.template_size;
-      drawingContext.strokeRect(x, y, width, height); // x, y, width, height
+      // call wasm function
+      console.log("call wasm.draw_image()");
+      const rgbaBuffer = await wasm.draw_image(
+        new Uint8Array(imageData.data.buffer),
+        videoCanvas.width,
+        videoCanvas.height,
+        wasmResp.min_value_location[0],
+        wasmResp.min_value_location[1],
+        wasmResp.template_size[0],
+        wasmResp.template_size[1],
+      );
+
+      // reflect images on canvas context
+      const outputImageData = new ImageData(
+        new Uint8ClampedArray(rgbaBuffer),
+        drawingCanvas.width,
+        drawingCanvas.height,
+      );
+      drawingContext.putImageData(outputImageData, 0, 0);
     } else {
-      // clear01
-      // drawingContext.clearRect(
-      //   0,
-      //   0,
-      //   drawingCanvas.width,
-      //   drawingCanvas.height
-      // );
-
-      // clear02
-      // drawingContext.save();
-      // drawingContext.globalCompositeOperation = "copy";
-      // drawingContext.fillStyle = "rgba(0, 0, 0, 0)";
-      // drawingContext.fillRect(
-      //   0,
-      //   0,
-      //   drawingCanvas.width,
-      //   drawingCanvas.height
-      // );
-      // drawingContext.restore();
-
-      // clear03
-      const width = drawingCanvas.width;
-      const height = drawingCanvas.height;
-      drawingCanvas.width = 0;
-      drawingCanvas.width = width;
-      drawingCanvas.height = height;
+      // draw video camera image
+      drawingContext.drawImage(
+        video,
+        0,
+        0,
+        drawingCanvas.width,
+        drawingCanvas.height,
+      );
     }
-
-    // draw video camera image
-    // drawingContext.drawImage(
-    //   video,
-    //   0,
-    //   0,
-    //   drawingCanvas.width,
-    //   drawingCanvas.height
-    // );
 
     requestAnimationFrame(processFrame);
   } catch (error) {

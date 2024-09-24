@@ -4,6 +4,17 @@ import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
+// DetectionCamera
+//
+// 1. 2 layer from the bottom
+//  - video
+//  - canvas for input and output but output doesn't work
+//
+// 2. call detect_draw_image() as wasm function for detecting image location and drawing
+//
+// 3. draw output from wasm function but drawing doesn't work
+//    even if drawing by canvas API to canvas, it doesn't work
+
 // wasm response
 interface WasmResponse {
   raw_data: number[];
