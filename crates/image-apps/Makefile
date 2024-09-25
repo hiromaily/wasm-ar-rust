@@ -22,6 +22,10 @@ run-grayscale:
 run-mozaic:
 	cargo run --bin imgapp-mozaic
 
+.PHONY: run-mozaic2
+run-mozaic2:
+	cargo run --bin imgapp-mozaic2
+
 .PHONY: run-cannyedge
 run-cannyedge:
 	cargo run --bin imgapp-cannyedge
