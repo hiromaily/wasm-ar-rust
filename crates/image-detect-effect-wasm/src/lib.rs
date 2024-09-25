@@ -159,7 +159,7 @@ impl ImageDetector {
         self.call_count
     }
 
-    pub async fn detect_mozaic_imageess(
+    pub async fn detect_image_and_mozaic(
         &mut self,
         input: &[u8],
         width: u32,
