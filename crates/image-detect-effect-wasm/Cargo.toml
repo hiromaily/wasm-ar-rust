@@ -1,0 +1,44 @@
+[package]
+name = "image-detect-effect-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WASM example for Template Matching using Rust and Svelte"
+repository = "https://github.com/hiromaily/wasm-ar-rust"
+license = "MIT"
+
+build = "src/build.rs"
+
+[package.metadata.cargo-machete]
+ignored = ["wasm-bindgen-futures", "web_sys"]
+
+# For Apple Silicon
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# workspace
+template-matching = { path = "../template-matching" }
+
+anyhow = "1.0"
+image = { version = "0.25" }
+imageproc = "0.25"
+# wasm specific
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["console"] }
+console_error_panic_hook = "0.1"
+# define struct for frontend
+# https://rustwasm.github.io/wasm-bindgen/reference/arbitrary-data-with-serde.html
+serde-wasm-bindgen = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+# wasm with async
+wasm-bindgen-futures = "0.4"
+#futures = "0.3"
+
+[profile.release]
+opt-level = "z" # To create a smaller binary
+
+[lints]
+workspace = true
