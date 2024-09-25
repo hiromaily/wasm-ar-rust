@@ -1,5 +1,5 @@
 <script lang="ts">
-import DetectionCamera from "./lib/components/DetectionCamera4.svelte";
+import DetectionCamera from "./lib/components/DetectionCamera.svelte";
 import Video from "./lib/components/EffectVideo.svelte";
 import WasmCanvas from "./lib/components/WasmCanvas.svelte";
 
