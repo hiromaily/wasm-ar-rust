@@ -26,15 +26,51 @@ fn load_images(
     width: u32,
     height: u32,
 ) -> anyhow::Result<(DynamicImage, DynamicImage)> {
-    let web_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
-        ImageBuffer::from_raw(width, height, input.to_vec())
-            .ok_or_else(|| anyhow!("Failed to create ImageBuffer"))?;
-    let web_dyn_img = DynamicImage::ImageRgba8(web_img);
+    let img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(width, height, input.to_vec())
+        .ok_or_else(|| anyhow!("Failed to create ImageBuffer"))?;
+    let dyn_img = DynamicImage::ImageRgba8(img);
 
     let template_img = image::load_from_memory_with_format(TEMPLATE_IMAGE, image::ImageFormat::Png)
         .map_err(|_| anyhow!("Failed to create ImageBuffer from template"))?;
 
-    Ok((web_dyn_img, template_img))
+    Ok((dyn_img, template_img))
+}
+
+async fn template_matching_and_find_extremes(
+    img: &DynamicImage,
+    template_img: &DynamicImage,
+) -> anyhow::Result<(f32, (u32, u32))> {
+    // to grayscale
+    let gray_img = img.to_luma32f();
+    let gray_template_img = template_img.to_luma32f();
+
+    let result_img = match_template(
+        &gray_img,
+        &gray_template_img,
+        MatchTemplateMethod::SumOfSquaredDifferences,
+    )
+    .await;
+
+    let result = find_extremes(&result_img);
+    Ok((result.min_value, result.min_value_location))
+}
+
+fn draw_rectangle(
+    img: DynamicImage,
+    temp_w: u32,
+    temp_h: u32,
+    min_value_location: (u32, u32),
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    // convert to RGB
+    let mut img_rgb: ImageBuffer<Rgb<u8>, Vec<u8>> = img.into_rgb8();
+
+    // draw a rectangle for the match location
+    draw_hollow_rect_mut(
+        &mut img_rgb,
+        Rect::at(min_value_location.0 as i32, min_value_location.1 as i32).of_size(temp_w, temp_h),
+        Rgb([255, 0, 0]), // red
+    );
+    img_rgb
 }
 
 //
@@ -74,24 +110,10 @@ pub async fn detect_draw_image(
         //console::log_1(&"1. load image".to_string().into());
         let (web_dyn_img, template_img) = load_images(input, width, height)?;
 
-        // 2. to grayscale
-        //console::log_1(&"2. to grayscale image".to_string().into());
-        let gray_web_img = web_dyn_img.to_luma32f();
-        let gray_template_img = template_img.to_luma32f();
-
-        // 3. template matching (async function)
+        // 2. template matching (async function)
         //console::log_1(&"3. template matching".to_string().into());
-        let result_img = match_template(
-            &gray_web_img,
-            &gray_template_img,
-            MatchTemplateMethod::SumOfSquaredDifferences,
-        )
-        .await;
-
-        // 4. find min & max values
-        // console::log_1(&"4. find min/max value".to_string().into());
-        let result = find_extremes(&result_img);
-        // console::log_1(&format!("Extremes result: {:?}", result).into());
+        let (min_value, min_value_location) =
+            template_matching_and_find_extremes(&web_dyn_img, &template_img).await?;
 
         // dummy result for debug
         // let result = Extremes {
@@ -101,61 +123,48 @@ pub async fn detect_draw_image(
         //     max_value_location: (113, 147),
         // };
 
-        if result.min_value > threshold {
+        if min_value > threshold {
             // no detection
             // return input image
-            let web_img2: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            let web_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
                 ImageBuffer::from_raw(width, height, input.to_vec())
                     .ok_or_else(|| anyhow::anyhow!("Failed to create ImageBuffer"))?;
 
             let res = ImageAndLocationResponse {
-                raw_data: web_img2.into_raw(),
-                min_value: result.min_value,
-                min_value_location: result.min_value_location,
+                raw_data: web_img.into_raw(),
+                min_value,
+                min_value_location,
             };
 
             return to_value(&res)
                 .map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e));
         }
 
-        // 5. convert to RGB
-        //console::log_1(&"5. convert web_img to RGB".to_string().into());
-        let mut img_rgb = web_dyn_img.into_rgb8();
+        // 3. draw a rectangle for the match location
         let (tw, th) = (template_img.width(), template_img.height());
+        let img_rgb = draw_rectangle(web_dyn_img, tw, th, min_value_location);
 
-        // 6. draw a rectangle for the match location
-        //console::log_1(&"6. draw a rectangle".to_string().into());
-        draw_hollow_rect_mut(
-            &mut img_rgb,
-            Rect::at(
-                result.min_value_location.0 as i32,
-                result.min_value_location.1 as i32,
-            )
-            .of_size(tw, th),
-            Rgb([255, 0, 0]), // red
-        );
-
-        // 7. convert result to rgba for web
-        //console::log_1(&"7. convert result to rgba for web".to_string().into());
+        // 4. convert result to rgba for web
+        //console::log_1(&"4. convert result to rgba for web".to_string().into());
         let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
         for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
             let rgb_pixel = img_rgb.get_pixel(x, y);
             *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
         }
 
-        // 7. return
-        //console::log_1(&"8. return inner function".to_string().into());
+        // 5. return
+        //console::log_1(&"5 return inner function".to_string().into());
         let res = ImageAndLocationResponse {
             raw_data: rgba_img.into_raw(),
-            min_value: result.min_value, // under 3000 would be threshold
-            min_value_location: result.min_value_location,
+            min_value, // under 3000 would be threshold
+            min_value_location,
         };
 
         to_value(&res).map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e))
     }
     .await;
 
-    //console::log_1(&"9. final return".to_string().into());
+    //console::log_1(&"6. final return".to_string().into());
     //result.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
     result.map_err(convert_error)
 }
