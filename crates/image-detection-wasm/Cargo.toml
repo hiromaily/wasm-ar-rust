@@ -8,11 +8,15 @@ license = "MIT"
 
 build = "src/build.rs"
 
-[lib]
-crate-type = ["cdylib"]
-
 [package.metadata.cargo-machete]
 ignored = ["wasm-bindgen-futures", "web_sys"]
+
+# For Apple Silicon
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies]
 # workspace
@@ -35,10 +39,6 @@ wasm-bindgen-futures = "0.4"
 
 [profile.release]
 opt-level = "z" # To create a smaller binary
-
-# For Apple Silicon
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false
 
 [lints]
 workspace = true

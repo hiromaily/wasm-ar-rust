@@ -6,6 +6,7 @@ import { onMount } from "svelte";
 //
 
 onMount(async () => {
-  await wasm.start();
+  // ball animation
+  await wasm.start_ball();
 });
 </script>

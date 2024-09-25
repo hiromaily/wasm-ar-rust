@@ -13,7 +13,7 @@ const CANVAS_H: f64 = 600.0;
 //const BACKGROUND_COLOR: &str = "#FFFFFF";
 
 #[wasm_bindgen]
-pub fn start() -> Result<(), JsValue> {
+pub fn start_ball() -> Result<(), JsValue> {
     // Set up console error hook
     console_error_panic_hook::set_once();
 

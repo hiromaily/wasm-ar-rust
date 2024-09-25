@@ -136,7 +136,7 @@ const processFrame = async (timestamp: number) => {
 
     // call wasm function
     console.log("call wasm.detect_draw_image()");
-    const threshold = 3500;
+    const threshold = 4000;
     const response = await wasm.detect_draw_image(
       new Uint8Array(imageData.data.buffer),
       videoCanvas.width,

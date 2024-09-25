@@ -6,6 +6,10 @@ description = "WASM example for drawing image on canvas form WASM using Rust and
 repository = "https://github.com/hiromaily/wasm-ar-rust"
 license = "MIT"
 
+# For Apple Silicon
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [lib]
 crate-type = ["cdylib"]
 
@@ -27,10 +31,6 @@ wee_alloc = "0.4.5"
 
 [profile.release]
 opt-level = "z" # To create a smaller binary
-
-# For Apple Silicon
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false
 
 [lints]
 workspace = true
