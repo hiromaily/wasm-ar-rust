@@ -18,6 +18,10 @@ run-wasm2:
 run-grayscale:
 	cargo run --bin imgapp-grayscale
 
+.PHONY: run-mozaic
+run-mozaic:
+	cargo run --bin imgapp-mozaic
+
 .PHONY: run-cannyedge
 run-cannyedge:
 	cargo run --bin imgapp-cannyedge

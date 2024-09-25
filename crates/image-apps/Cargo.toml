@@ -20,6 +20,10 @@ name = "imgapp-grayscale"
 path = "bin/app_grayscale.rs"
 
 [[bin]]
+name = "imgapp-mozaic"
+path = "bin/app_mozaic.rs"
+
+[[bin]]
 name = "imgapp-cannyedge"
 path = "bin/app_cannyedge.rs"
 

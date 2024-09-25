@@ -6,6 +6,8 @@ description = "WASM example for drawing image on canvas form WASM using Rust and
 repository = "https://github.com/hiromaily/wasm-ar-rust"
 license = "MIT"
 
+build = "src/build.rs"
+
 # For Apple Silicon
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
@@ -25,9 +27,19 @@ web-sys = { version = "0.3", features = [
     "Element",
     "HtmlCanvasElement",
     "CanvasRenderingContext2d",
+    "WebGlRenderingContext",
+    "WebGlBuffer",
 ] }
+js-sys = "0.3"
+
 console_error_panic_hook = "0.1"
 wee_alloc = "0.4.5"
+# 3D
+stl_io = "0.8"
+
+[build-dependencies]
+serde = "1.0"
+serde_json = "1.0"
 
 [profile.release]
 opt-level = "z" # To create a smaller binary
