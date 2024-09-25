@@ -55,43 +55,14 @@ async fn template_matching_and_find_extremes(
     Ok((result.min_value, result.min_value_location))
 }
 
-// fn draw_rectangle(
-//     img: DynamicImage,
-//     temp_w: u32,
-//     temp_h: u32,
-//     min_value_location: (u32, u32),
-// ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-//     // convert to RGB
-//     let mut img_rgb: ImageBuffer<Rgb<u8>, Vec<u8>> = img.into_rgb8();
-
-//     // draw a rectangle for the match location
-//     draw_hollow_rect_mut(
-//         &mut img_rgb,
-//         Rect::at(min_value_location.0 as i32, min_value_location.1 as i32).of_size(temp_w, temp_h),
-//         Rgb([255, 0, 0]), // red
-//     );
-//     img_rgb
-// }
-
-//
-// public
-//
-
-#[derive(Serialize, Deserialize)]
-pub struct ImageAndLocationResponse {
-    pub raw_data: Vec<u8>,
-    pub min_value: f32,
-    pub min_value_location: (u32, u32),
-}
-
 // detect_draw_image detects template image location and draw rectangle
 // however drawing doesn't work, it may be because of WebGPU bug
-#[wasm_bindgen]
-pub async fn detect_mozaic_image(
+async fn detect_mozaic_image(
     input: &[u8],
     width: u32,
     height: u32,
     threshold: f32,
+    count: u32,
 ) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
 
@@ -120,10 +91,10 @@ pub async fn detect_mozaic_image(
         }
 
         // 3. apply mozaic except the match location
-        let mosaic_size = 5;
+        //let mosaic_size = 5;
         apply_mosaic(
             &mut web_img,
-            mosaic_size,
+            count,
             min_value_location.0,
             min_value_location.1,
             template_img.width(),
@@ -153,4 +124,53 @@ pub async fn detect_mozaic_image(
     //console::log_1(&"6. final return".to_string().into());
     //result.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
     result.map_err(convert_error)
+}
+
+//
+// public
+//
+
+#[derive(Serialize, Deserialize)]
+pub struct ImageAndLocationResponse {
+    pub raw_data: Vec<u8>,
+    pub min_value: f32,
+    pub min_value_location: (u32, u32),
+}
+
+#[wasm_bindgen]
+pub struct ImageDetector {
+    call_count: u32,
+}
+
+impl Default for ImageDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[wasm_bindgen]
+impl ImageDetector {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> ImageDetector {
+        ImageDetector { call_count: 0 }
+    }
+
+    pub fn get_call_count(&self) -> u32 {
+        self.call_count
+    }
+
+    pub async fn detect_mozaic_imageess(
+        &mut self,
+        input: &[u8],
+        width: u32,
+        height: u32,
+        threshold: f32,
+    ) -> Result<JsValue, JsValue> {
+        self.call_count += 1;
+        if self.call_count == 100 {
+            self.call_count = 1;
+        }
+        // process
+        detect_mozaic_image(input, width, height, threshold, self.call_count).await
+    }
 }
