@@ -11,9 +11,9 @@ import Help from "./Help.svelte";
 //  - videoCanvas for input
 //  - drawingCanvas for drawing from wasm function
 //
-// 2. call detect_draw_image() as wasm function for detecting image location and drawing
-//  - detect_draw_image works! with drawingCanvas
-// 3. reflect output iamge into drawingCanvas
+// 2. call detect_draw_image() as wasm function for detecting image location
+//    and drawing rectangle
+// 3. reflect output image into drawingCanvas
 
 // wasm response
 interface WasmResponse {

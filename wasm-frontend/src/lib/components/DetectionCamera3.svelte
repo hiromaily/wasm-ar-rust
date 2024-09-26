@@ -5,6 +5,7 @@ import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
 
 // DetectionCamera
+//  Changed to hide the video element and make the drawing canvas full screen.
 //
 // 1. 3 layer from the bottom
 //  - video
@@ -78,13 +79,18 @@ const setupVideoCanvas = () => {
 
 const setupDrawingCanvas = () => {
   drawingCanvas = document.createElement("canvas");
-  document.body.appendChild(drawingCanvas);
-  drawingCanvas.style.position = "absolute";
-  drawingCanvas.style.top = "0";
-  drawingCanvas.style.left = "0";
+  const app = document.getElementById("app");
+  app!.appendChild(drawingCanvas);
 
   drawingCanvas.width = video.videoWidth; // 640
   drawingCanvas.height = video.videoHeight; // 480
+
+  drawingCanvas.style.display = "block";
+  drawingCanvas.style.width = "100%";
+  drawingCanvas.style.height = "100%";
+  drawingCanvas.style.objectFit = "contain";
+  drawingCanvas.style.objectPosition = "center";
+
   drawingContext = drawingCanvas.getContext("2d")!;
 
   // invisible
@@ -197,7 +203,7 @@ onMount(async () => {
 });
 </script>
 
-<video id="video" bind:this={video} autoplay playsinline></video>
+<video id="video-off" bind:this={video} autoplay playsinline></video>
 
 <div
   id="fps"
