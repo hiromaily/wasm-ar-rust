@@ -42,7 +42,9 @@ let fps = 0;
 let lastTimestamp = 0;
 
 // Wasm instance
-const imageDetector = new wasm.ImageDetector();
+const maxCount = 50;
+const threshold = 4000.0;
+const imageDetector = new wasm.ImageDetector(maxCount, threshold);
 
 // initialization
 const setupVideo = async () => {
@@ -133,12 +135,10 @@ const processFrame = async (timestamp: number) => {
 
     // call wasm function
     console.log("call imageDetector.detect_image_and_mozaic()");
-    const threshold = 4000;
     const response = await imageDetector.detect_image_and_mozaic(
       new Uint8Array(imageData.data.buffer),
       videoCanvas.width,
       videoCanvas.height,
-      threshold,
     );
     // check response if error
     if (response instanceof Error) throw response;
