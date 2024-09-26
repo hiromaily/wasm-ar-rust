@@ -1,5 +1,5 @@
 [package]
-name = "image-detect-effect-wasm"
+name = "image-detect-mozaic-wasm"
 version = "0.1.0"
 edition = "2021"
 description = "WASM example for Template Matching using Rust and Svelte"

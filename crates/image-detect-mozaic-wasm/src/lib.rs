@@ -1,5 +1,6 @@
 use anyhow::anyhow;
-use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
+use image::{DynamicImage, ImageBuffer, Rgb, Rgba, RgbaImage};
+use imageproc::{drawing::draw_hollow_rect_mut, rect::Rect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
@@ -55,6 +56,24 @@ async fn template_matching_and_find_extremes(
     Ok((result.min_value, result.min_value_location))
 }
 
+fn draw_rectangle(
+    img: DynamicImage,
+    temp_w: u32,
+    temp_h: u32,
+    min_value_location: (u32, u32),
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+    // convert to RGB
+    let mut img_rgb: ImageBuffer<Rgb<u8>, Vec<u8>> = img.into_rgb8();
+
+    // draw a rectangle for the match location
+    draw_hollow_rect_mut(
+        &mut img_rgb,
+        Rect::at(min_value_location.0 as i32, min_value_location.1 as i32).of_size(temp_w, temp_h),
+        Rgb([255, 0, 0]), // red
+    );
+    img_rgb
+}
+
 //
 // public
 //
@@ -71,6 +90,7 @@ pub struct ImageDetector {
     max_count: u32,
     threshold: f32,
     call_count: u32,
+    is_rectangle: bool,
 }
 
 impl Default for ImageDetector {
@@ -87,6 +107,7 @@ impl ImageDetector {
             max_count,
             threshold,
             call_count: 0,
+            is_rectangle: true,
         }
     }
 
@@ -143,12 +164,11 @@ impl ImageDetector {
             };
 
             // debug
-            console::log_1(&format!("min_value: {:?}, count: {:?}", min_value, count).into());
+            //console::log_1(&format!("min_value: {:?}, count: {:?}", min_value, count).into());
 
             if count != 0 {
                 // 3. apply mozaic except the match location
                 console::log_1(&"3. apply mozaic".to_string().into());
-                //let mosaic_size = 5;
                 apply_mosaic(
                     &mut web_img,
                     count,
@@ -159,7 +179,15 @@ impl ImageDetector {
                 );
             }
 
-            // 4. convert result to rgba for web
+            // TODO: 4. draw a rectangle for the match location
+            // let img_rgb = draw_rectangle(
+            //     web_dyn_img,
+            //     template_img.width(),
+            //     template_img.height(),
+            //     min_value_location,
+            // );
+
+            // 5. convert result to rgba for web
             //console::log_1(&"4. convert result to rgba for web".to_string().into());
             let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
             for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
@@ -167,7 +195,7 @@ impl ImageDetector {
                 *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
             }
 
-            // 5. return
+            // 6. return
             //console::log_1(&"5 return inner function".to_string().into());
             let res = ImageAndLocationResponse {
                 raw_data: rgba_img.into_raw(),
@@ -179,7 +207,7 @@ impl ImageDetector {
         }
         .await;
 
-        //console::log_1(&"6. final return".to_string().into());
+        //console::log_1(&"7. final return".to_string().into());
         //result.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
         result.map_err(convert_error)
     }

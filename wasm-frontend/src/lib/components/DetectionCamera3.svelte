@@ -1,5 +1,5 @@
 <script lang="ts">
-import * as wasm from "image-detect-effect-wasm";
+import * as wasm from "image-detect-mozaic-wasm";
 import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
 import Help from "./Help.svelte";
