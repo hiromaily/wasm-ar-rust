@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use image::{DynamicImage, ImageBuffer, Rgb, Rgba, RgbaImage};
+use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
 use imageproc::{drawing::draw_hollow_rect_mut, rect::Rect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
@@ -56,23 +56,23 @@ async fn template_matching_and_find_extremes(
     Ok((result.min_value, result.min_value_location))
 }
 
-fn draw_rectangle(
-    img: DynamicImage,
-    temp_w: u32,
-    temp_h: u32,
-    min_value_location: (u32, u32),
-) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-    // convert to RGB
-    let mut img_rgb: ImageBuffer<Rgb<u8>, Vec<u8>> = img.into_rgb8();
+// fn draw_rectangle(
+//     img: DynamicImage,
+//     temp_w: u32,
+//     temp_h: u32,
+//     min_value_location: (u32, u32),
+// ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+//     // convert to RGB
+//     let mut img_rgb: ImageBuffer<Rgb<u8>, Vec<u8>> = img.into_rgb8();
 
-    // draw a rectangle for the match location
-    draw_hollow_rect_mut(
-        &mut img_rgb,
-        Rect::at(min_value_location.0 as i32, min_value_location.1 as i32).of_size(temp_w, temp_h),
-        Rgb([255, 0, 0]), // red
-    );
-    img_rgb
-}
+//     // draw a rectangle for the match location
+//     draw_hollow_rect_mut(
+//         &mut img_rgb,
+//         Rect::at(min_value_location.0 as i32, min_value_location.1 as i32).of_size(temp_w, temp_h),
+//         Rgb([255, 0, 0]), // red
+//     );
+//     img_rgb
+// }
 
 //
 // public
@@ -87,16 +87,18 @@ pub struct ImageAndLocationResponse {
 
 #[wasm_bindgen]
 pub struct ImageDetector {
+    effect_mode: u8,                      // effect mode: 1: mozaic
     call_count: u32,                      // template image detected count
     max_count: u32,                       // maximum of template image detected count
     threshold: f32,                       // threshold for result of template matching
     is_rectangle: bool,                   // enabled drawing rectangle on detected area
-    rectangle_color: [u8; 3],             // rectangle color
+    rectangle_color: [u8; 4],             // rectangle color
     prev_valid_min_value_loc: (u32, u32), // previous detected min_value_location as cache
 }
 
 impl Default for ImageDetector {
     fn default() -> Self {
+        // TODO: add more parameter in frontend part
         Self::new(50, 4000.0)
     }
 }
@@ -104,13 +106,15 @@ impl Default for ImageDetector {
 #[wasm_bindgen]
 impl ImageDetector {
     #[wasm_bindgen(constructor)]
+    // TODO: add more parameter in frontend part
     pub fn new(max_count: u32, threshold: f32) -> ImageDetector {
         ImageDetector {
+            effect_mode: 1, // mozaic
             call_count: 0,
             max_count,
             threshold,
             is_rectangle: true,
-            rectangle_color: [0, 0, 0],
+            rectangle_color: [0, 0, 0, 0],
             prev_valid_min_value_loc: (0, 0),
         }
     }
@@ -197,13 +201,15 @@ impl ImageDetector {
                 );
             }
 
-            // TODO: 4. draw a rectangle for the match location
-            // let img_rgb = draw_rectangle(
-            //     web_dyn_img,
-            //     template_img.width(),
-            //     template_img.height(),
-            //     min_value_location,
-            // );
+            // 4. draw a rectangle for the match location
+            if self.is_rectangle && is_detected {
+                draw_hollow_rect_mut(
+                    &mut web_img,
+                    Rect::at(min_value_location.0 as i32, min_value_location.1 as i32)
+                        .of_size(template_img.width(), template_img.height()),
+                    Rgba(self.rectangle_color),
+                );
+            }
 
             // 5. convert result to rgba for web
             //console::log_1(&"4. convert result to rgba for web".to_string().into());
