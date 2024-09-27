@@ -87,10 +87,12 @@ pub struct ImageAndLocationResponse {
 
 #[wasm_bindgen]
 pub struct ImageDetector {
-    max_count: u32,
-    threshold: f32,
-    call_count: u32,
-    is_rectangle: bool,
+    call_count: u32,                      // template image detected count
+    max_count: u32,                       // maximum of template image detected count
+    threshold: f32,                       // threshold for result of template matching
+    is_rectangle: bool,                   // enabled drawing rectangle on detected area
+    rectangle_color: [u8; 3],             // rectangle color
+    prev_valid_min_value_loc: (u32, u32), // previous detected min_value_location as cache
 }
 
 impl Default for ImageDetector {
@@ -104,10 +106,12 @@ impl ImageDetector {
     #[wasm_bindgen(constructor)]
     pub fn new(max_count: u32, threshold: f32) -> ImageDetector {
         ImageDetector {
+            call_count: 0,
             max_count,
             threshold,
-            call_count: 0,
             is_rectangle: true,
+            rectangle_color: [0, 0, 0],
+            prev_valid_min_value_loc: (0, 0),
         }
     }
 
@@ -144,6 +148,8 @@ impl ImageDetector {
     ) -> Result<JsValue, JsValue> {
         console_error_panic_hook::set_once();
 
+        let mut is_detected = false;
+
         // error handling to avoid panic
         let result = async {
             // 1. load image
@@ -157,9 +163,13 @@ impl ImageDetector {
 
             let count = if min_value > self.threshold {
                 // no detection
-                //self.decrement()
                 self.decrement()
             } else {
+                // detected
+                is_detected = true;
+                // save min_value_location
+                self.prev_valid_min_value_loc = min_value_location;
+
                 self.increment()
             };
 
@@ -172,8 +182,16 @@ impl ImageDetector {
                 apply_mosaic(
                     &mut web_img,
                     count,
-                    min_value_location.0,
-                    min_value_location.1,
+                    if is_detected {
+                        min_value_location.0
+                    } else {
+                        self.prev_valid_min_value_loc.0
+                    },
+                    if is_detected {
+                        min_value_location.1
+                    } else {
+                        self.prev_valid_min_value_loc.1
+                    },
                     template_img.width(),
                     template_img.height(),
                 );
