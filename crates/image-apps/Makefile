@@ -26,9 +26,17 @@ run-mozaic:
 run-mozaic2:
 	cargo run --bin imgapp-mozaic2
 
+.PHONY: run-glow-effect
+run-glow-effect:
+	cargo run --bin imgapp-glow-effect
+
 .PHONY: run-cannyedge
 run-cannyedge:
 	cargo run --bin imgapp-cannyedge
+
+.PHONY: run-cannyedge2
+run-cannyedge2:
+	cargo run --bin imgapp-cannyedge2
 
 .PHONY: run-gaussianblur
 run-gaussianblur:

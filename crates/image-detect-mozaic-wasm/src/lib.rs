@@ -181,24 +181,31 @@ impl ImageDetector {
             //console::log_1(&format!("min_value: {:?}, count: {:?}", min_value, count).into());
 
             if count != 0 {
-                // 3. apply mozaic except the match location
-                console::log_1(&"3. apply mozaic".to_string().into());
-                apply_mosaic(
-                    &mut web_img,
-                    count,
-                    if is_detected {
-                        min_value_location.0
-                    } else {
-                        self.prev_valid_min_value_loc.0
-                    },
-                    if is_detected {
-                        min_value_location.1
-                    } else {
-                        self.prev_valid_min_value_loc.1
-                    },
-                    template_img.width(),
-                    template_img.height(),
-                );
+                // 3. apply effect
+                if self.effect_mode == 1 {
+                    // mozaic except the match location
+                    console::log_1(&"3. apply mozaic".to_string().into());
+                    apply_mosaic(
+                        &mut web_img,
+                        count,
+                        if is_detected {
+                            min_value_location.0
+                        } else {
+                            self.prev_valid_min_value_loc.0
+                        },
+                        if is_detected {
+                            min_value_location.1
+                        } else {
+                            self.prev_valid_min_value_loc.1
+                        },
+                        template_img.width(),
+                        template_img.height(),
+                    );
+                } else {
+                    // canny edge
+                    // let gray_img = web_dyn_img.to_luma8();
+                    // let edges = canny(&gray_img, 50.0, 100.0);
+                }
             }
 
             // 4. draw a rectangle for the match location
