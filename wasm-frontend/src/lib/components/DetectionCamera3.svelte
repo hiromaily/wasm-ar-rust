@@ -69,21 +69,15 @@ const setupVideo = async () => {
   }
 };
 
+// for only generating image for wasm
 const setupVideoCanvas = () => {
   videoCanvas = document.createElement("canvas");
-  document.body.appendChild(videoCanvas);
-  videoCanvas.style.position = "absolute";
-  videoCanvas.style.top = "0";
-  videoCanvas.style.left = "0";
 
   // Note:
   //  Don't change size, it would break input data of wasm function
   videoCanvas.width = video.videoWidth; // 640
   videoCanvas.height = video.videoHeight; // 480
   videoContext = videoCanvas.getContext("2d")!;
-
-  // invisible
-  videoCanvas.style.display = "none";
 };
 
 const setupDrawingCanvas = () => {
