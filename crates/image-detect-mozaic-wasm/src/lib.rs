@@ -247,19 +247,6 @@ impl ImageDetector {
                     let mut edges_img: ImageBuffer<image::Luma<u8>, Vec<u8>> =
                         canny(&gray_img, 50.0, 100.0);
 
-                    // 4. convert result to rgba for web
-                    // let mut edge_rgba_img: RgbaImage = ImageBuffer::new(width, height);
-                    // for (x, y, pixel) in edge_rgba_img.enumerate_pixels_mut() {
-                    //     let luma_pixel = edges_img.get_pixel(x, y);
-                    //     *pixel = Rgba([luma_pixel[0], luma_pixel[0], luma_pixel[0], 255]);
-                    // }
-                    // 5. return
-                    //console::log_1(&"5 return inner function".to_string().into());
-                    // let res = ImageAndLocationResponse {
-                    //     raw_data: edge_rgba_img.into_raw(),
-                    //     min_value, // under 3000 would be threshold
-                    //     min_value_location,
-                    // };
                     let res = create_response(
                         &mut edges_img,
                         width,
@@ -282,21 +269,6 @@ impl ImageDetector {
                 );
             }
 
-            // 5. convert result to rgba for web
-            //console::log_1(&"4. convert result to rgba for web".to_string().into());
-            // let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
-            // for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
-            //     let rgb_pixel = web_img.get_pixel(x, y);
-            //     *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
-            // }
-
-            // 6. return
-            //console::log_1(&"5 return inner function".to_string().into());
-            // let res = ImageAndLocationResponse {
-            //     raw_data: rgba_img.into_raw(),
-            //     min_value, // under 3000 would be threshold
-            //     min_value_location,
-            // };
             let res = create_response(&mut web_img, width, height, min_value, min_value_location);
             to_value(&res).map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e))
         }
