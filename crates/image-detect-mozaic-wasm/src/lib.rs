@@ -1,12 +1,12 @@
 use anyhow::anyhow;
-use image::{DynamicImage, ImageBuffer, Rgba, RgbaImage};
-use imageproc::{drawing::draw_hollow_rect_mut, rect::Rect};
+use image::{DynamicImage, GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
+use imageproc::{drawing::draw_hollow_rect_mut, edges::canny, rect::Rect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
-
 mod effect;
+
 use crate::effect::apply_mosaic;
 
 // workspace
@@ -56,23 +56,64 @@ async fn template_matching_and_find_extremes(
     Ok((result.min_value, result.min_value_location))
 }
 
-// fn draw_rectangle(
-//     img: DynamicImage,
-//     temp_w: u32,
-//     temp_h: u32,
-//     min_value_location: (u32, u32),
-// ) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
-//     // convert to RGB
-//     let mut img_rgb: ImageBuffer<Rgb<u8>, Vec<u8>> = img.into_rgb8();
+fn create_response<I>(
+    img: &mut I,
+    width: u32,
+    height: u32,
+    min_value: f32,
+    min_value_location: (u32, u32),
+) -> ImageAndLocationResponse
+where
+    I: GenericImage,
+    I::Pixel: Pixel<Subpixel = u8> + 'static,
+{
+    // convert result to rgba for web
+    let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
+    for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
+        let rgb_pixel = img.get_pixel(x, y).to_rgb();
+        *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
+    }
 
-//     // draw a rectangle for the match location
-//     draw_hollow_rect_mut(
-//         &mut img_rgb,
-//         Rect::at(min_value_location.0 as i32, min_value_location.1 as i32).of_size(temp_w, temp_h),
-//         Rgb([255, 0, 0]), // red
-//     );
-//     img_rgb
-// }
+    ImageAndLocationResponse {
+        raw_data: rgba_img.into_raw(),
+        min_value,
+        min_value_location,
+    }
+}
+
+// line color is red when canny edge
+#[allow(dead_code)]
+fn create_response2<I>(
+    img: &mut I,
+    width: u32,
+    height: u32,
+    min_value: f32,
+    min_value_location: (u32, u32),
+) -> ImageAndLocationResponse
+where
+    I: GenericImage,
+    I::Pixel: Pixel<Subpixel = u8> + 'static,
+{
+    // convert result to rgba for web
+    let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
+    for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
+        let rgb_pixel = img.get_pixel(x, y);
+        // Convert the pixel to RGBA
+        let channels = rgb_pixel.channels(); // Get channels as a slice
+        *pixel = Rgba([
+            channels.first().copied().unwrap_or(0),
+            channels.get(1).copied().unwrap_or(0),
+            channels.get(2).copied().unwrap_or(0),
+            255,
+        ]);
+    }
+
+    ImageAndLocationResponse {
+        raw_data: rgba_img.into_raw(),
+        min_value,
+        min_value_location,
+    }
+}
 
 //
 // public
@@ -87,7 +128,7 @@ pub struct ImageAndLocationResponse {
 
 #[wasm_bindgen]
 pub struct ImageDetector {
-    effect_mode: u8,                      // effect mode: 1: mozaic
+    effect_mode: u8,                      // effect mode: 1: mozaic, 2: canny edge
     call_count: u32,                      // template image detected count
     max_count: u32,                       // maximum of template image detected count
     threshold: f32,                       // threshold for result of template matching
@@ -99,7 +140,7 @@ pub struct ImageDetector {
 impl Default for ImageDetector {
     fn default() -> Self {
         // TODO: add more parameter in frontend part
-        Self::new(50, 4000.0)
+        Self::new(1, 50, 4000.0, true)
     }
 }
 
@@ -107,22 +148,22 @@ impl Default for ImageDetector {
 impl ImageDetector {
     #[wasm_bindgen(constructor)]
     // TODO: add more parameter in frontend part
-    pub fn new(max_count: u32, threshold: f32) -> ImageDetector {
+    pub fn new(
+        effect_mode: u8,
+        max_count: u32,
+        threshold: f32,
+        is_rectangle: bool,
+    ) -> ImageDetector {
         ImageDetector {
-            effect_mode: 1, // mozaic
+            effect_mode,
             call_count: 0,
             max_count,
             threshold,
-            is_rectangle: true,
+            is_rectangle,
             rectangle_color: [0, 0, 0, 0],
             prev_valid_min_value_loc: (0, 0),
         }
     }
-
-    // #[wasm_bindgen]
-    // pub fn get_call_count(&self) -> u32 {
-    //     self.call_count
-    // }
 
     pub fn increment(&mut self) -> u32 {
         console::log_1(&format!("increment() max_count: {:?}", self.max_count).into());
@@ -136,7 +177,6 @@ impl ImageDetector {
 
     pub fn decrement(&mut self) -> u32 {
         console::log_1(&" decrement()".to_string().into());
-        //self.call_count = self.call_count.wrapping_sub(1);
         if self.call_count == 0 {
             return 0;
         }
@@ -203,8 +243,32 @@ impl ImageDetector {
                     );
                 } else {
                     // canny edge
-                    // let gray_img = web_dyn_img.to_luma8();
-                    // let edges = canny(&gray_img, 50.0, 100.0);
+                    let gray_img = web_dyn_img.to_luma8();
+                    let mut edges_img: ImageBuffer<image::Luma<u8>, Vec<u8>> =
+                        canny(&gray_img, 50.0, 100.0);
+
+                    // 4. convert result to rgba for web
+                    // let mut edge_rgba_img: RgbaImage = ImageBuffer::new(width, height);
+                    // for (x, y, pixel) in edge_rgba_img.enumerate_pixels_mut() {
+                    //     let luma_pixel = edges_img.get_pixel(x, y);
+                    //     *pixel = Rgba([luma_pixel[0], luma_pixel[0], luma_pixel[0], 255]);
+                    // }
+                    // 5. return
+                    //console::log_1(&"5 return inner function".to_string().into());
+                    // let res = ImageAndLocationResponse {
+                    //     raw_data: edge_rgba_img.into_raw(),
+                    //     min_value, // under 3000 would be threshold
+                    //     min_value_location,
+                    // };
+                    let res = create_response(
+                        &mut edges_img,
+                        width,
+                        height,
+                        min_value,
+                        min_value_location,
+                    );
+                    return to_value(&res)
+                        .map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e));
                 }
             }
 
@@ -220,20 +284,20 @@ impl ImageDetector {
 
             // 5. convert result to rgba for web
             //console::log_1(&"4. convert result to rgba for web".to_string().into());
-            let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
-            for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
-                let rgb_pixel = web_img.get_pixel(x, y);
-                *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
-            }
+            // let mut rgba_img: RgbaImage = ImageBuffer::new(width, height);
+            // for (x, y, pixel) in rgba_img.enumerate_pixels_mut() {
+            //     let rgb_pixel = web_img.get_pixel(x, y);
+            //     *pixel = Rgba([rgb_pixel[0], rgb_pixel[1], rgb_pixel[2], 255]); // to RGBA
+            // }
 
             // 6. return
             //console::log_1(&"5 return inner function".to_string().into());
-            let res = ImageAndLocationResponse {
-                raw_data: rgba_img.into_raw(),
-                min_value, // under 3000 would be threshold
-                min_value_location,
-            };
-
+            // let res = ImageAndLocationResponse {
+            //     raw_data: rgba_img.into_raw(),
+            //     min_value, // under 3000 would be threshold
+            //     min_value_location,
+            // };
+            let res = create_response(&mut web_img, width, height, min_value, min_value_location);
             to_value(&res).map_err(|e| anyhow::anyhow!("Failed to serialize response: {:?}", e))
         }
         .await;

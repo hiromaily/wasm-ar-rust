@@ -40,7 +40,7 @@ fix:
 .PHONY: build
 build:
 	cargo build
-	make -C crates/opencv-wasm build
+	#make -C crates/opencv-wasm build
 
 .PHONY: setup-web
 setup-web:

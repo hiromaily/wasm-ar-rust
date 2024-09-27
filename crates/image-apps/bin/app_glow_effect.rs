@@ -12,9 +12,18 @@ fn main() {
     let rect_y = 100;
     let rect_width = 240;
     let rect_height = 227;
+    let glow_width = 30; // glow effect size
 
     // 3. Create the glow effect around the rectangle
-    let glow_img = create_glow_around(&img, rect_x, rect_y, rect_width, rect_height, 20.0);
+    let glow_img = create_glow_around(
+        &img,
+        rect_x,
+        rect_y,
+        rect_width,
+        rect_height,
+        glow_width,
+        10.0,
+    );
 
     // 3. save
     println!("3. save");
@@ -29,16 +38,23 @@ fn create_glow_around(
     y: u32,
     width: u32,
     height: u32,
+    glow_width: u32,
     blur_sigma: f32,
 ) -> RgbaImage {
-    // Create a mask for the specified rectangle
+    // Create a mask with glow around the specified rectangle
     let mut mask = RgbaImage::new(img.width(), img.height());
     for j in 0..mask.height() {
         for i in 0..mask.width() {
-            if i >= x && i < x + width && j >= y && j < y + height {
-                *mask.get_pixel_mut(i, j) = Rgba([0, 0, 0, 0]); // inside rectangle is transparent
+            // Only allow pixels within the glow width outside the rectangle
+            if (i < x || i >= x + width || j < y || j >= y + height)
+                && (i >= x.saturating_sub(glow_width)
+                    && i <= x + width + glow_width
+                    && j >= y.saturating_sub(glow_width)
+                    && j <= y + height + glow_width)
+            {
+                *mask.get_pixel_mut(i, j) = Rgba([255, 255, 255, 255]); // around rectangle is white
             } else {
-                *mask.get_pixel_mut(i, j) = Rgba([255, 255, 255, 255]); // outside rectangle is opaque
+                *mask.get_pixel_mut(i, j) = Rgba([0, 0, 0, 0]); // inside rectangle and outside glow width is transparent
             }
         }
     }
@@ -51,6 +67,7 @@ fn create_glow_around(
     for j in 0..blurred_mask.height() {
         for i in 0..blurred_mask.width() {
             let mask_pixel = blurred_mask.get_pixel(i, j);
+            // Only apply the glow effect if the mask pixel is not fully transparent
             if mask_pixel[3] > 0 {
                 let base_pixel = output_img.get_pixel(i, j);
                 let blended_pixel = blend_pixels(base_pixel, mask_pixel);
