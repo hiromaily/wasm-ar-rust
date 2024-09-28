@@ -1,5 +1,3 @@
-import * as wasm from "image-effect-wasm";
-
 // Save image from canvas
 const saveImage = (tempCanvas: HTMLCanvasElement, filename: string) => {
   const dataURL = tempCanvas.toDataURL("image/png");
@@ -46,19 +44,19 @@ export const saveOutputImage = (
 };
 
 // save output image with wasm function
-export const saveOutputImageWithWasm = (
-  context?: CanvasRenderingContext2D,
-  canvas?: HTMLCanvasElement,
-) => {
-  if (!context || !canvas) return;
+// export const saveOutputImageWithWasm = (
+//   context?: CanvasRenderingContext2D,
+//   canvas?: HTMLCanvasElement,
+// ) => {
+//   if (!context || !canvas) return;
 
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const rgbaBuffer = new Uint8Array(imageData.data.buffer);
-  // call wasm function
-  const base64String = wasm.save_image(rgbaBuffer, canvas.width, canvas.height);
+//   const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+//   const rgbaBuffer = new Uint8Array(imageData.data.buffer);
+//   // call wasm function
+//   const base64String = wasm.save_image(rgbaBuffer, canvas.width, canvas.height);
 
-  const link = document.createElement("a");
-  link.href = `data:image/png;base64,${base64String}`;
-  link.download = "edge_detected_image.png";
-  link.click();
-};
+//   const link = document.createElement("a");
+//   link.href = `data:image/png;base64,${base64String}`;
+//   link.download = "edge_detected_image.png";
+//   link.click();
+// };

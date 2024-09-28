@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 import * as wasm from "image-detection-wasm";
 import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../images";
@@ -204,4 +204,4 @@ onMount(async () => {
 
 {#if showHelp}
   <Help />
-{/if}
+{/if} -->
