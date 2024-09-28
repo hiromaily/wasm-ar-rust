@@ -2,6 +2,7 @@
 import * as wasm from "image-detect-mozaic-wasm";
 import { onMount } from "svelte";
 import { saveOriginalImage, saveOutputImage } from "../image-libs";
+import { checkMobileDevice } from "../ua";
 import Help from "./Help.svelte";
 
 // DetectionCamera
@@ -199,14 +200,22 @@ onMount(async () => {
     processFrame(unixTimestamp);
 
     // help
-    showHelp = true;
+    const deviceType: string = checkMobileDevice();
+    if (deviceType === "Others") showHelp = true;
   } catch (error) {
     console.error("Error during onMount:", error);
   }
 });
 </script>
 
-<video id="video-off" bind:this={video} autoplay playsinline></video>
+<video
+  id="video-off"
+  bind:this={video}
+  autoplay
+  playsinline
+  aria-live="polite"
+  aria-label="Live webcam feed"
+></video>
 
 <div
   id="fps"

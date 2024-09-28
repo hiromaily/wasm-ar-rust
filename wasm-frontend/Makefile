@@ -9,7 +9,7 @@ lint:
 
 .PHONY: install-wasm-pkg
 install-wasm-pkg:
-	npm i ../crates/opencv-wasm/public/pkg-bundler
+	npm i ../crates/image-detect-mozaic-wasm/public/pkg-bundler
 
 .PHONY: deploy
 deploy:
