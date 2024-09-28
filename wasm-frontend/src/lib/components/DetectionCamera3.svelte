@@ -49,7 +49,7 @@ let lastTimestamp = 0;
 const effectMode = Math.random() < 0.5 ? 1 : 2;
 
 const maxCount = 50;
-const threshold = 4000.0;
+const threshold = 4500.0;
 const isRectangle = true;
 const imageDetector = new wasm.ImageDetector(
   effectMode,
@@ -208,6 +208,7 @@ onMount(async () => {
 });
 </script>
 
+<!-- svelte-ignore a11y-media-has-caption -->
 <video
   id="video-off"
   bind:this={video}

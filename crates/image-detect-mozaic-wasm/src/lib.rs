@@ -129,9 +129,9 @@ pub struct ImageAndLocationResponse {
 #[wasm_bindgen]
 pub struct ImageDetector {
     effect_mode: u8,                      // effect mode: 1: mozaic, 2: canny edge
-    call_count: u32,                      // template image detected count
-    max_count: u32,                       // maximum of template image detected count
-    threshold: f32,                       // threshold for result of template matching
+    detect_count: u32,                    // template image detected count
+    max_detect_count: u32,                // maximum of template image detected count
+    matching_threshold: f32,              // threshold for result of template matching
     is_rectangle: bool,                   // enabled drawing rectangle on detected area
     rectangle_color: [u8; 4],             // rectangle color
     prev_valid_min_value_loc: (u32, u32), // previous detected min_value_location as cache
@@ -150,15 +150,15 @@ impl ImageDetector {
     // TODO: add more parameter in frontend part
     pub fn new(
         effect_mode: u8,
-        max_count: u32,
-        threshold: f32,
+        max_detect_count: u32,
+        matching_threshold: f32,
         is_rectangle: bool,
     ) -> ImageDetector {
         ImageDetector {
             effect_mode,
-            call_count: 0,
-            max_count,
-            threshold,
+            detect_count: 0,
+            max_detect_count,
+            matching_threshold,
             is_rectangle,
             rectangle_color: [0, 0, 0, 0],
             prev_valid_min_value_loc: (0, 0),
@@ -166,22 +166,22 @@ impl ImageDetector {
     }
 
     pub fn increment(&mut self) -> u32 {
-        console::log_1(&format!("increment() max_count: {:?}", self.max_count).into());
+        console::log_1(&format!("increment() max_count: {:?}", self.max_detect_count).into());
         console::log_1(&" increment()".to_string().into());
-        self.call_count += 1;
-        if self.call_count > self.max_count {
-            self.call_count = 1;
+        self.detect_count += 1;
+        if self.detect_count > self.max_detect_count {
+            self.detect_count = 1;
         }
-        self.call_count
+        self.detect_count
     }
 
     pub fn decrement(&mut self) -> u32 {
         console::log_1(&" decrement()".to_string().into());
-        if self.call_count == 0 {
+        if self.detect_count == 0 {
             return 0;
         }
-        self.call_count -= 1;
-        self.call_count
+        self.detect_count -= 1;
+        self.detect_count
     }
 
     pub async fn detect_image_and_mozaic(
@@ -205,7 +205,7 @@ impl ImageDetector {
             let (min_value, min_value_location) =
                 template_matching_and_find_extremes(&web_dyn_img, &template_img).await?;
 
-            let count = if min_value > self.threshold {
+            let count = if min_value > self.matching_threshold {
                 // no detection
                 self.decrement()
             } else {
