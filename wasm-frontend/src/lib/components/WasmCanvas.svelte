@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
 import * as wasm from "canvas-wasm";
 import { onMount } from "svelte";
 
@@ -9,4 +9,4 @@ onMount(async () => {
   // ball animation
   await wasm.start_ball();
 });
-</script>
+</script> -->
